@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Complaints — Makkal Nagar Municipal Corporation</title>
+    <!-- Bootstrap 5 CSS & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Civic Navigation -->
+    <nav class="navbar navbar-expand-lg mn-navbar sticky-top">
+        <div class="container">
+            <a class="mn-brand" href="dashboard.html">
+                <div class="mn-brand-logo">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div>
+                    <div>MAKKAL NAGAR</div>
+                    <span class="mn-brand-tagline">Municipal Administration Portal</span>
+                </div>
+            </a>
+            <button class="navbar-toggler text-white" type="button" data-bs-toggle="collapse" data-bs-target="#mnNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mnNav">
+                <ul class="navbar-nav me-auto ms-lg-3 gap-1">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="complaints.html"><i class="bi bi-card-checklist me-1"></i> Complaints</a></li>
+                    <li class="nav-item"><a class="nav-link" href="departments.html"><i class="bi bi-diagram-3 me-1"></i> Departments</a></li>
+                    <li class="nav-item"><a class="nav-link" href="reports.html"><i class="bi bi-graph-up me-1"></i> Reports</a></li>
+                    <li class="nav-item"><a class="nav-link" href="register-complaint.html"><i class="bi bi-plus-circle me-1"></i> New Grievance</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-2" id="navUserContainer"></div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="py-4">
+        <div class="container">
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <h2 class="fw-bold mb-1">Municipal Grievance Records</h2>
+                    <p class="text-muted mb-0">Browse, filter, and inspect complaints registered across all wards</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="reports.html" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-download me-1"></i> Export Reports
+                    </a>
+                    <a href="register-complaint.html" class="btn btn-teal btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i> New Complaint
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filter Controls Card -->
+            <div class="card p-3 mb-4 shadow-sm border-0">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" class="form-control" id="filterSearch" placeholder="Search ID, citizen, description...">
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <select class="form-select form-select-sm" id="filterCategory">
+                            <option value="">All Categories</option>
+                            <option value="WATER">Water Supply</option>
+                            <option value="ROAD">Roads</option>
+                            <option value="STREETLIGHT">Streetlights</option>
+                            <option value="WASTE">Waste Management</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <select class="form-select form-select-sm" id="filterLocation">
+                            <option value="">All Locations</option>
+                            <option value="Anna Nagar">Anna Nagar</option>
+                            <option value="Gandhi Street">Gandhi Street</option>
+                            <option value="Nehru Colony">Nehru Colony</option>
+                            <option value="Lake View Road">Lake View Road</option>
+                            <option value="Market Area">Market Area</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <select class="form-select form-select-sm" id="filterSeverity">
+                            <option value="">All Severities</option>
+                            <option value="CRITICAL">CRITICAL</option>
+                            <option value="HIGH">HIGH</option>
+                            <option value="MEDIUM">MEDIUM</option>
+                            <option value="LOW">LOW</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <select class="form-select form-select-sm" id="filterStatus">
+                            <option value="">All Statuses</option>
+                            <option value="REGISTERED">Registered / Queue</option>
+                            <option value="ASSIGNED">Assigned</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="RESOLVED">Resolved</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-1 d-flex gap-1">
+                        <button class="btn btn-sm btn-teal w-100" onclick="applyFilters()" title="Apply Filters">
+                            <i class="bi bi-funnel-fill"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="resetFilters()" title="Reset Filters">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complaints Data Table Card -->
+            <div class="card border-0 shadow">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Complaint ID</th>
+                                    <th>Category</th>
+                                    <th>Location</th>
+                                    <th>Severity</th>
+                                    <th>Impact</th>
+                                    <th>Order</th>
+                                    <th>Status</th>
+                                    <th>Assigned Department</th>
+                                    <th>Registered Date</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="complaintsTableBody">
+                                <tr><td colspan="10" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-teal"></div> Loading records...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pagination Footer -->
+                <div class="card-footer bg-white border-top d-flex flex-wrap justify-content-between align-items-center py-3">
+                    <small class="text-muted" id="paginationInfo">Showing 0 of 0 records</small>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0 gap-1" id="paginationControls"></ul>
+                    </nav>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/app.js"></script>
+    <script>
+        let currentPage = 0;
+        const pageSize = 10;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await requireAdminAuth();
+            if (user) {
+                loadComplaints();
+            }
+        });
+
+        async function loadComplaints(page = 0) {
+            currentPage = page;
+            const tbody = document.getElementById('complaintsTableBody');
+            tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-teal"></div> Loading...</td></tr>`;
+
+            const category = document.getElementById('filterCategory').value;
+            const location = document.getElementById('filterLocation').value;
+            const severity = document.getElementById('filterSeverity').value;
+            const status = document.getElementById('filterStatus').value;
+            const search = document.getElementById('filterSearch').value.trim();
+
+            const params = new URLSearchParams({
+                page: currentPage,
+                size: pageSize,
+                sortBy: 'createdAt',
+                direction: 'DESC'
+            });
+
+            if (category) params.append('category', category);
+            if (location) params.append('location', location);
+            if (severity) params.append('severity', severity);
+            if (status) params.append('status', status);
+            if (search) params.append('search', search);
+
+            try {
+                const data = await apiFetch(`/api/admin/complaints?${params.toString()}`);
+                renderTable(data.content);
+                renderPagination(data);
+            } catch (err) {
+                console.error('Failed to load complaints:', err);
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-1"></i> Failed to load complaints: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        function renderTable(items) {
+            const tbody = document.getElementById('complaintsTableBody');
+            if (!items || items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-muted">No complaints match your filter criteria.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = items.map(c => `
+                <tr>
+                    <td class="fw-bold"><a href="complaint-details.html?id=${c.id}" class="text-decoration-none text-navy">${escapeHtml(c.complaintId)}</a></td>
+                    <td>${getCategoryBadge(c.category)}</td>
+                    <td><small class="fw-semibold">${escapeHtml(c.location)}</small></td>
+                    <td>${getSeverityBadge(c.severity)}</td>
+                    <td><span class="badge bg-light text-dark border">${c.affectedCount} persons</span></td>
+                    <td><small class="text-muted fw-bold">#${c.arrivalOrder}</small></td>
+                    <td>${getStatusBadge(c.status)}</td>
+                    <td><small class="text-muted">${escapeHtml(c.departmentName || '—')}</small></td>
+                    <td><small class="text-muted">${formatDate(c.createdAt)}</small></td>
+                    <td class="text-end">
+                        <a href="complaint-details.html?id=${c.id}" class="btn btn-sm btn-outline-teal py-1 px-2" title="View details and audit log">
+                            <i class="bi bi-eye"></i> Details
+                        </a>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPagination(pageData) {
+            const info = document.getElementById('paginationInfo');
+            const total = pageData.totalElements;
+            const start = total === 0 ? 0 : (pageData.number * pageData.size) + 1;
+            const end = Math.min((pageData.number + 1) * pageData.size, total);
+            info.innerText = `Showing ${start} to ${end} of ${total} records`;
+
+            const controls = document.getElementById('paginationControls');
+            const totalPages = pageData.totalPages;
+
+            if (totalPages <= 1) {
+                controls.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <li class="page-item ${pageData.first ? 'disabled' : ''}">
+                    <button class="page-link" onclick="loadComplaints(${currentPage - 1})">&laquo;</button>
+                </li>
+            `;
+
+            for (let i = 0; i < totalPages; i++) {
+                if (i === 0 || i === totalPages - 1 || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `
+                        <li class="page-item ${i === currentPage ? 'active' : ''}">
+                            <button class="page-link" onclick="loadComplaints(${i})">${i + 1}</button>
+                        </li>
+                    `;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<li class="page-item disabled"><span class="page-link">&hellip;</span></li>`;
+                }
+            }
+
+            html += `
+                <li class="page-item ${pageData.last ? 'disabled' : ''}">
+                    <button class="page-link" onclick="loadComplaints(${currentPage + 1})">&raquo;</button>
+                </li>
+            `;
+
+            controls.innerHTML = html;
+        }
+
+        function applyFilters() {
+            loadComplaints(0);
+        }
+
+        function resetFilters() {
+            document.getElementById('filterCategory').value = '';
+            document.getElementById('filterLocation').value = '';
+            document.getElementById('filterSeverity').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterSearch').value = '';
+            loadComplaints(0);
+        }
+
+        // Search on Enter
+        document.getElementById('filterSearch').addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') applyFilters();
+        });
+    </script>
+</body>
+</html>

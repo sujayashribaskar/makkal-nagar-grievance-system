@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrative Dashboard — Makkal Nagar Municipal Corporation</title>
+    <!-- Bootstrap 5 CSS & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+    <!-- Civic Navigation -->
+    <nav class="navbar navbar-expand-lg mn-navbar sticky-top">
+        <div class="container">
+            <a class="mn-brand" href="dashboard.html">
+                <div class="mn-brand-logo">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div>
+                    <div>MAKKAL NAGAR</div>
+                    <span class="mn-brand-tagline">Municipal Administration Portal</span>
+                </div>
+            </a>
+            <button class="navbar-toggler text-white" type="button" data-bs-toggle="collapse" data-bs-target="#mnNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mnNav">
+                <ul class="navbar-nav me-auto ms-lg-3 gap-1">
+                    <li class="nav-item"><a class="nav-link active" href="dashboard.html"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="complaints.html"><i class="bi bi-card-checklist me-1"></i> Complaints</a></li>
+                    <li class="nav-item"><a class="nav-link" href="departments.html"><i class="bi bi-diagram-3 me-1"></i> Departments</a></li>
+                    <li class="nav-item"><a class="nav-link" href="reports.html"><i class="bi bi-graph-up me-1"></i> Reports</a></li>
+                    <li class="nav-item"><a class="nav-link" href="register-complaint.html"><i class="bi bi-plus-circle me-1"></i> New Grievance</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-2" id="navUserContainer"></div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="py-4">
+        <div class="container">
+
+            <!-- Top Header & Quick Actions -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <h2 class="fw-bold mb-1">Administrative Overview</h2>
+                    <p class="text-muted mb-0">Real-time municipal grievance analytics and priority dispatch telemetry</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="loadDashboardData()">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                    </button>
+                    <a href="reports.html" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Data
+                    </a>
+                    <a href="register-complaint.html" class="btn btn-teal btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i> New Complaint
+                    </a>
+                </div>
+            </div>
+
+            <!-- Key Metric Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-lg-2">
+                    <div class="stat-card stat-primary">
+                        <div class="stat-card-label">Total</div>
+                        <div class="stat-card-value" id="cardTotal">—</div>
+                        <div class="stat-card-icon bg-light text-primary"><i class="bi bi-layers"></i></div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <div class="stat-card stat-warning">
+                        <div class="stat-card-label">In Queue</div>
+                        <div class="stat-card-value" id="cardWaiting">—</div>
+                        <div class="stat-card-icon bg-light text-warning"><i class="bi bi-hourglass-split"></i></div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <div class="stat-card stat-teal">
+                        <div class="stat-card-label">Assigned</div>
+                        <div class="stat-card-value" id="cardAssigned">—</div>
+                        <div class="stat-card-icon bg-light text-teal"><i class="bi bi-person-check"></i></div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <div class="stat-card stat-primary">
+                        <div class="stat-card-label">In Progress</div>
+                        <div class="stat-card-value" id="cardInProgress">—</div>
+                        <div class="stat-card-icon bg-light text-primary"><i class="bi bi-tools"></i></div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <div class="stat-card stat-success">
+                        <div class="stat-card-label">Resolved</div>
+                        <div class="stat-card-value" id="cardResolved">—</div>
+                        <div class="stat-card-icon bg-light text-success"><i class="bi bi-check2-circle"></i></div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <div class="stat-card stat-danger">
+                        <div class="stat-card-label">High / Critical</div>
+                        <div class="stat-card-value" id="cardHighSeverity">—</div>
+                        <div class="stat-card-icon bg-light text-danger"><i class="bi bi-exclamation-triangle"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Visualizations -->
+            <div class="row g-4 mb-4">
+                <div class="col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-pie-chart text-teal me-2"></i>Status Distribution</span>
+                        </div>
+                        <div class="card-body d-flex align-items-center justify-content-center p-3">
+                            <div style="position: relative; height:240px; width:100%;">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-grid text-primary me-2"></i>Category Breakdown</span>
+                        </div>
+                        <div class="card-body d-flex align-items-center justify-content-center p-3">
+                            <div style="position: relative; height:240px; width:100%;">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-bar-chart text-warning me-2"></i>Department Workload</span>
+                        </div>
+                        <div class="card-body p-3">
+                            <div style="position: relative; height:240px; width:100%;">
+                                <canvas id="workloadChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Priority Waiting Queue & Recent Complaints Grid -->
+            <div class="row g-4">
+                <!-- Priority Queue Snapshot -->
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-bold"><i class="bi bi-sort-down-alt text-teal me-2"></i>Priority Waiting Queue</span>
+                                <small class="text-muted d-block">Ranked by Severity &bull; Affected Count &bull; Arrival Order</small>
+                            </div>
+                            <a href="departments.html" class="btn btn-sm btn-outline-teal">Manage Queues</a>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Complaint ID</th>
+                                            <th>Category</th>
+                                            <th>Severity</th>
+                                            <th>Impact</th>
+                                            <th>Location</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="priorityQueueTableBody">
+                                        <tr><td colspan="6" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-teal"></div> Loading waiting queue...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Complaints -->
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="fw-bold"><i class="bi bi-clock-history text-primary me-2"></i>Recently Submitted Complaints</span>
+                            <a href="complaints.html" class="btn btn-sm btn-outline-primary">View All</a>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Complaint ID</th>
+                                            <th>Citizen</th>
+                                            <th>Category</th>
+                                            <th>Status</th>
+                                            <th>Registered</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentComplaintsTableBody">
+                                        <tr><td colspan="5" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary"></div> Loading recent complaints...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/app.js"></script>
+    <script>
+        let statusChartInstance = null;
+        let categoryChartInstance = null;
+        let workloadChartInstance = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await requireAdminAuth();
+            if (user) {
+                loadDashboardData();
+            }
+        });
+
+        async function loadDashboardData() {
+            try {
+                // Fetch summary metrics
+                const summary = await apiFetch('/api/admin/dashboard/summary');
+                if (summary) {
+                    document.getElementById('cardTotal').innerText = summary.totalComplaints;
+                    document.getElementById('cardWaiting').innerText = summary.waitingForCapacityCount;
+                    document.getElementById('cardAssigned').innerText = summary.assignedCount;
+                    document.getElementById('cardInProgress').innerText = summary.inProgressCount;
+                    document.getElementById('cardResolved').innerText = summary.resolvedCount;
+                    document.getElementById('cardHighSeverity').innerText = summary.highSeverityUnresolvedCount;
+
+                    renderPriorityQueue(summary.highestPriorityWaiting);
+                    renderRecentComplaints(summary.recentComplaints);
+                }
+
+                // Fetch charts data
+                const charts = await apiFetch('/api/admin/dashboard/charts');
+                if (charts) {
+                    renderCharts(charts);
+                }
+
+            } catch (err) {
+                console.error('Failed to load dashboard telemetry:', err);
+            }
+        }
+
+        function renderPriorityQueue(items) {
+            const tbody = document.getElementById('priorityQueueTableBody');
+            if (!items || items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted"><i class="bi bi-check-circle text-success me-1"></i> No complaints currently waiting for department capacity!</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = items.map(c => `
+                <tr>
+                    <td class="fw-semibold text-navy"><a href="complaint-details.html?id=${c.id}" class="text-decoration-none">${escapeHtml(c.complaintId)}</a></td>
+                    <td>${getCategoryBadge(c.category)}</td>
+                    <td>${getSeverityBadge(c.severity)}</td>
+                    <td><span class="badge bg-light text-dark border">${c.affectedCount} persons</span></td>
+                    <td><small class="text-muted">${escapeHtml(c.location)}</small></td>
+                    <td><a href="complaint-details.html?id=${c.id}" class="btn btn-sm btn-outline-teal py-0 px-2">Details</a></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderRecentComplaints(items) {
+            const tbody = document.getElementById('recentComplaintsTableBody');
+            if (!items || items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">No recent complaints found.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = items.map(c => `
+                <tr>
+                    <td class="fw-semibold"><a href="complaint-details.html?id=${c.id}" class="text-decoration-none">${escapeHtml(c.complaintId)}</a></td>
+                    <td><small class="fw-semibold">${escapeHtml(c.citizenName)}</small></td>
+                    <td>${getCategoryBadge(c.category)}</td>
+                    <td>${getStatusBadge(c.status)}</td>
+                    <td><small class="text-muted">${formatDate(c.createdAt)}</small></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderCharts(charts) {
+            // 1. Status Chart
+            if (statusChartInstance) statusChartInstance.destroy();
+            const ctxStatus = document.getElementById('statusChart').getContext('2d');
+            statusChartInstance = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: charts.statusChart.labels,
+                    datasets: [{
+                        data: charts.statusChart.data,
+                        backgroundColor: ['#f59e0b', '#0284c7', '#8b5cf6', '#10b981'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+                }
+            });
+
+            // 2. Category Chart
+            if (categoryChartInstance) categoryChartInstance.destroy();
+            const ctxCat = document.getElementById('categoryChart').getContext('2d');
+            categoryChartInstance = new Chart(ctxCat, {
+                type: 'bar',
+                data: {
+                    labels: charts.categoryChart.labels,
+                    datasets: [{
+                        label: 'Grievances',
+                        data: charts.categoryChart.data,
+                        backgroundColor: ['#0284c7', '#f59e0b', '#eab308', '#0d9488'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+
+            // 3. Department Workload Chart
+            if (workloadChartInstance) workloadChartInstance.destroy();
+            const ctxWorkload = document.getElementById('workloadChart').getContext('2d');
+            const d = charts.departmentWorkloadChart;
+            workloadChartInstance = new Chart(ctxWorkload, {
+                type: 'bar',
+                data: {
+                    labels: d.labels.map(name => name.replace(' Department', '')),
+                    datasets: [
+                        {
+                            label: 'Active Cases',
+                            data: d.activeCases,
+                            backgroundColor: '#0284c7',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Waiting Queue',
+                            data: d.waitingCases,
+                            backgroundColor: '#f59e0b',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Capacity Limit',
+                            data: d.capacity,
+                            backgroundColor: '#cbd5e1',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

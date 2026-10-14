@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrator Login — Makkal Nagar Municipal Corporation</title>
+    <!-- Bootstrap 5 CSS & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <!-- Civic Navigation -->
+    <nav class="navbar navbar-expand-lg mn-navbar">
+        <div class="container">
+            <a class="mn-brand" href="index.html">
+                <div class="mn-brand-logo">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div>
+                    <div>MAKKAL NAGAR</div>
+                    <span class="mn-brand-tagline">Your Voice. Our Responsibility.</span>
+                </div>
+            </a>
+            <div class="ms-auto">
+                <a href="index.html" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-arrow-left me-1"></i> Public Portal
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="d-flex align-items-center justify-content-center py-5">
+        <div class="container" style="max-width: 460px;">
+            <div class="card shadow-lg border-0 p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="mn-brand-logo mx-auto mb-3" style="width: 54px; height: 54px; font-size: 1.6rem;">
+                        <i class="bi bi-shield-lock"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">Administrative Login</h3>
+                    <p class="text-muted small">Sign in to manage complaints, department queues, and municipal reports</p>
+                </div>
+
+                <div id="loginAlert"></div>
+
+                <form id="loginForm" novalidate>
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Administrator Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-person text-muted"></i></span>
+                            <input type="text" class="form-control" id="username" name="username" placeholder="e.g. admin" required autofocus>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label for="password" class="form-label mb-0">Password</label>
+                        </div>
+                        <div class="input-group mt-1">
+                            <span class="input-group-text bg-white"><i class="bi bi-key text-muted"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" placeholder="••••••••••••" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-teal w-100 py-2 fs-6 fw-semibold" id="btnLogin">
+                        <span id="btnText"><i class="bi bi-box-arrow-in-right me-2"></i>Sign In</span>
+                        <span id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                    </button>
+                </form>
+
+                <div class="alert alert-info mt-4 mb-0 small border-0 p-3" style="background-color: #f0fdfa; color: #0f766e;">
+                    <div class="d-flex gap-2">
+                        <i class="bi bi-info-circle-fill fs-5"></i>
+                        <div>
+                            <span class="fw-bold">Default Demo Credentials:</span><br>
+                            Username: <code>admin</code><br>
+                            Password: <code>Admin@Makkal2026</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-3 text-muted small">
+                Authorized municipal personnel only &bull; Sessions are audited
+            </div>
+        </div>
+    </main>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // If already logged in, redirect to dashboard
+            const user = await checkAdminAuth();
+            if (user) {
+                window.location.href = 'dashboard.html';
+                return;
+            }
+
+            const loginForm = document.getElementById('loginForm');
+            const btnLogin = document.getElementById('btnLogin');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+
+                if (!username || !password) {
+                    showAlert('loginAlert', 'Please enter both username and password.', 'warning');
+                    return;
+                }
+
+                // Loading State
+                btnText.classList.add('d-none');
+                btnSpinner.classList.remove('d-none');
+                btnLogin.disabled = true;
+
+                try {
+                    const result = await apiFetch('/api/auth/login', {
+                        method: 'POST',
+                        body: { username, password }
+                    });
+
+                    // Success - redirect to dashboard or preserved destination
+                    const redirectUrl = sessionStorage.getItem('redirect_after_login') || 'dashboard.html';
+                    sessionStorage.removeItem('redirect_after_login');
+                    window.location.href = redirectUrl;
+
+                } catch (err) {
+                    console.error('Login error:', err);
+                    const msg = err.status === 401 ?
+                        'Invalid username or password. Please verify your credentials.' :
+                        (err.message || 'Server connection error. Please ensure the backend is running.');
+                    showAlert('loginAlert', msg, 'danger');
+
+                    btnText.classList.remove('d-none');
+                    btnSpinner.classList.add('d-none');
+                    btnLogin.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

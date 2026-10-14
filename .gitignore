@@ -1,0 +1,28 @@
+# Maven build output
+target/
+*.class
+
+# IDE and Editor configurations
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Environment & credentials
+.env
+*.local
+application-local.yml
+
+# Logs
+*.log
+logs/
+
+# Operating System temporary files
+.DS_Store
+Thumbs.db
+
+# Temporary media & packages
+temp/
+node_modules/

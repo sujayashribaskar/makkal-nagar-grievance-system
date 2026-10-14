@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Grievance — Makkal Nagar Municipal Corporation</title>
+    <!-- Bootstrap 5 CSS & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Civic Navigation -->
+    <nav class="navbar navbar-expand-lg mn-navbar sticky-top">
+        <div class="container">
+            <a class="mn-brand" href="index.html">
+                <div class="mn-brand-logo">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div>
+                    <div>MAKKAL NAGAR</div>
+                    <span class="mn-brand-tagline">Your Voice. Our Responsibility.</span>
+                </div>
+            </a>
+            <button class="navbar-toggler text-white" type="button" data-bs-toggle="collapse" data-bs-target="#mnNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mnNav">
+                <ul class="navbar-nav ms-auto align-items-center gap-1">
+                    <li class="nav-item"><a class="nav-link" href="index.html"><i class="bi bi-house-door me-1"></i> Home</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="register-complaint.html"><i class="bi bi-pencil-square me-1"></i> Register Complaint</a></li>
+                    <li class="nav-item"><a class="nav-link" href="track-complaint.html"><i class="bi bi-search me-1"></i> Track Complaint</a></li>
+                    <li class="nav-item ms-lg-2" id="navUserContainer">
+                        <a href="login.html" class="btn btn-sm btn-outline-light">
+                            <i class="bi bi-shield-lock me-1"></i> Official Portal
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="py-5">
+        <div class="container" style="max-width: 800px;">
+            <div class="mb-4">
+                <a href="index.html" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i> Back to Homepage</a>
+                <h2 class="fw-bold mt-2 mb-1">Citizen Grievance Registration</h2>
+                <p class="text-muted">Submit municipal issues directly to the concerned corporation department.</p>
+            </div>
+
+            <div id="formAlert"></div>
+
+            <div class="card p-4 p-md-5 border-0 shadow">
+                <form id="complaintForm" novalidate>
+
+                    <!-- Section 1: Citizen Profile -->
+                    <h5 class="fw-bold text-navy mb-3 pb-2 border-bottom">
+                        <i class="bi bi-person-badge text-teal me-2"></i>1. Citizen Details
+                    </h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="citizenName" class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="citizenName" required placeholder="e.g. Ramanathan S">
+                            <div class="invalid-feedback">Citizen name is required (min 2 characters).</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">Contact Phone Number</label>
+                            <input type="tel" class="form-control" id="phone" placeholder="e.g. 9840112345">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="citizenReference" class="form-label">Citizen Reference ID <small class="text-muted">(Optional)</small></label>
+                            <input type="text" class="form-control" id="citizenReference" placeholder="e.g. CIT-1001 (auto-assigned if blank)">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="location" class="form-label">Municipal Ward / Location <span class="text-danger">*</span></label>
+                            <select class="form-select" id="location" required>
+                                <option value="" disabled selected>Select municipal location...</option>
+                                <option value="Anna Nagar">Anna Nagar</option>
+                                <option value="Gandhi Street">Gandhi Street</option>
+                                <option value="Nehru Colony">Nehru Colony</option>
+                                <option value="Lake View Road">Lake View Road</option>
+                                <option value="Market Area">Market Area</option>
+                            </select>
+                            <div class="invalid-feedback">Please select a valid municipal location.</div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Grievance Specification -->
+                    <h5 class="fw-bold text-navy mb-3 pb-2 border-bottom">
+                        <i class="bi bi-exclamation-triangle text-warning me-2"></i>2. Grievance Specifics
+                    </h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="category" class="form-label">Complaint Category <span class="text-danger">*</span></label>
+                            <select class="form-select" id="category" required>
+                                <option value="" disabled selected>Select category...</option>
+                                <option value="WATER">Water Supply (Water Supply Dept)</option>
+                                <option value="ROAD">Roads and Potholes (Roads & Infra Dept)</option>
+                                <option value="STREETLIGHT">Streetlights (Electrical Dept)</option>
+                                <option value="WASTE">Waste Management (Sanitation Dept)</option>
+                            </select>
+                            <div class="invalid-feedback">Category selection is required.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="severity" class="form-label">Severity Level <span class="text-danger">*</span></label>
+                            <select class="form-select" id="severity" required>
+                                <option value="" disabled selected>Select urgency...</option>
+                                <option value="LOW">LOW — Minor maintenance or non-urgent defect</option>
+                                <option value="MEDIUM">MEDIUM — Standard municipal repair needed</option>
+                                <option value="HIGH">HIGH — Significant disruption / health risk</option>
+                                <option value="CRITICAL">CRITICAL — Severe hazard / burst pipeline / electrocution risk</option>
+                            </select>
+                            <div class="invalid-feedback">Severity level is required.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="affectedCount" class="form-label">Estimated People Affected <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="affectedCount" min="1" value="1" required>
+                            <small class="text-muted">Used by the municipal priority queue to break ranking ties.</small>
+                            <div class="invalid-feedback">Number of affected people must be a positive integer (min 1).</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="openIssueRef" class="form-label">Open Issue Reference <small class="text-muted">(Optional)</small></label>
+                            <input type="text" class="form-control" id="openIssueRef" placeholder="e.g. PIPE-BURST-01 or GARBAGE-MK-01">
+                            <small class="text-muted">If you are referring to a known ongoing locality issue.</small>
+                        </div>
+                        <div class="col-12">
+                            <label for="description" class="form-label">Problem Description <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="description" rows="4" required minlength="10" placeholder="Please provide specific details about the issue, exact landmark, and visible consequences..."></textarea>
+                            <div class="invalid-feedback">Please enter a detailed description of at least 10 characters.</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="reset" class="btn btn-outline-secondary px-4">Clear Form</button>
+                        <button type="submit" class="btn btn-teal px-5 py-2 fw-semibold" id="btnSubmit">
+                            <span id="btnSubmitText"><i class="bi bi-send-fill me-2"></i>Submit Grievance</span>
+                            <span id="btnSubmitSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-teal text-white border-0">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Grievance Registered Successfully</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div class="display-6 fw-bold text-navy mb-2" id="modalComplaintId">MN-2026-XXXX</div>
+                    <p class="text-muted mb-3">Please preserve this unique Complaint ID to track progress.</p>
+
+                    <div class="alert alert-light border text-start p-3 mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Responsible Department:</span>
+                            <span class="fw-bold" id="modalDepartment">—</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Current Lifecycle Status:</span>
+                            <span id="modalStatusBadge">—</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Arrival Sequence Order:</span>
+                            <span class="fw-bold" id="modalArrivalOrder">—</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-2 mt-4">
+                        <a href="#" class="btn btn-primary" id="btnModalTrack"><i class="bi bi-search me-1"></i> Track Now</a>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await checkAdminAuth();
+            updateNavUserUI(user);
+
+            // Pre-select category if passed in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const preCategory = urlParams.get('category');
+            if (preCategory && document.getElementById('category').querySelector(`option[value="${preCategory}"]`)) {
+                document.getElementById('category').value = preCategory;
+            }
+
+            const form = document.getElementById('complaintForm');
+            const btnSubmit = document.getElementById('btnSubmit');
+            const btnSubmitText = document.getElementById('btnSubmitText');
+            const btnSubmitSpinner = document.getElementById('btnSubmitSpinner');
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                if (!form.checkValidity()) {
+                    e.stopPropagation();
+                    form.classList.add('was-validated');
+                    return;
+                }
+
+                const payload = {
+                    citizenName: document.getElementById('citizenName').value.trim(),
+                    citizenReference: document.getElementById('citizenReference').value.trim() || null,
+                    phone: document.getElementById('phone').value.trim() || null,
+                    location: document.getElementById('location').value,
+                    category: document.getElementById('category').value,
+                    severity: document.getElementById('severity').value,
+                    affectedCount: parseInt(document.getElementById('affectedCount').value, 10),
+                    openIssueRef: document.getElementById('openIssueRef').value.trim() || null,
+                    description: document.getElementById('description').value.trim()
+                };
+
+                // Loading
+                btnSubmit.disabled = true;
+                btnSubmitText.classList.add('d-none');
+                btnSubmitSpinner.classList.remove('d-none');
+
+                try {
+                    const result = await apiFetch('/api/public/complaints', {
+                        method: 'POST',
+                        body: payload
+                    });
+
+                    // Success - Populate and show modal
+                    document.getElementById('modalComplaintId').innerText = result.complaintId;
+                    document.getElementById('modalDepartment').innerText = result.departmentName || 'Assigned';
+                    document.getElementById('modalStatusBadge').innerHTML = getStatusBadge(result.status);
+                    document.getElementById('modalArrivalOrder').innerText = `#${result.arrivalOrder}`;
+                    document.getElementById('btnModalTrack').href = `track-complaint.html?id=${result.complaintId}`;
+
+                    successModal.show();
+                    form.reset();
+                    form.classList.remove('was-validated');
+
+                } catch (err) {
+                    console.error('Registration failed:', err);
+                    showAlert('formAlert', err.message || 'Failed to submit complaint. Please check your entries.', 'danger');
+                } finally {
+                    btnSubmit.disabled = false;
+                    btnSubmitText.classList.remove('d-none');
+                    btnSubmitSpinner.classList.add('d-none');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,497 @@
+/* Makkal Nagar Municipal Corporation Design System
+   Civic Professional Style - Modern Navy & Teal Palette */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --mn-navy-dark: #0a192f;
+    --mn-navy: #0f2744;
+    --mn-navy-light: #1e3a5f;
+    --mn-blue: #0284c7;
+    --mn-teal: #0d9488;
+    --mn-teal-light: #14b8a6;
+    --mn-accent: #38bdf8;
+    --mn-bg: #f8fafc;
+    --mn-card-bg: #ffffff;
+    --mn-text-main: #0f172a;
+    --mn-text-muted: #64748b;
+    --mn-border: #e2e8f0;
+    --mn-success: #10b981;
+    --mn-warning: #f59e0b;
+    --mn-danger: #ef4444;
+    --mn-info: #3b82f6;
+    --mn-radius: 12px;
+    --mn-shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --mn-shadow: 0 4px 14px rgba(15, 39, 68, 0.08);
+    --mn-shadow-lg: 0 10px 30px rgba(15, 39, 68, 0.12);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--mn-bg);
+    color: var(--mn-text-main);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+}
+
+main {
+    flex: 1;
+}
+
+/* Civic Navbar */
+.mn-navbar {
+    background: linear-gradient(135deg, var(--mn-navy-dark) 0%, var(--mn-navy) 100%);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 0.8rem 0;
+    border-bottom: 2px solid var(--mn-teal);
+}
+
+.mn-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #ffffff !important;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+}
+
+.mn-brand-logo {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, var(--mn-teal) 0%, var(--mn-blue) 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 1.4rem;
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
+}
+
+.mn-brand-tagline {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    display: block;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.navbar-nav .nav-link {
+    color: #cbd5e1 !important;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 0.5rem 1rem !important;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link.active {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link.admin-link {
+    background-color: rgba(13, 148, 136, 0.2);
+    border: 1px solid rgba(13, 148, 136, 0.4);
+    color: #38bdf8 !important;
+}
+
+/* Hero Section */
+.mn-hero {
+    background: linear-gradient(135deg, var(--mn-navy) 0%, var(--mn-navy-dark) 100%);
+    color: #ffffff;
+    padding: 5rem 0 4.5rem;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(13, 148, 136, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.mn-hero-title {
+    font-size: 2.8rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.25rem;
+}
+
+.mn-hero-lead {
+    font-size: 1.2rem;
+    color: #cbd5e1;
+    margin-bottom: 2rem;
+    max-width: 680px;
+    line-height: 1.6;
+}
+
+/* Municipal Cards */
+.card {
+    background-color: var(--mn-card-bg);
+    border: 1px solid var(--mn-border);
+    border-radius: var(--mn-radius);
+    box-shadow: var(--mn-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: var(--mn-shadow-lg);
+}
+
+.card-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--mn-border);
+    font-weight: 600;
+    padding: 1rem 1.25rem;
+}
+
+/* Stat Counter Card */
+.stat-card {
+    border-radius: var(--mn-radius);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--mn-border);
+    background: #ffffff;
+}
+
+.stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+}
+
+.stat-card.stat-primary::after { background-color: var(--mn-blue); }
+.stat-card.stat-warning::after { background-color: var(--mn-warning); }
+.stat-card.stat-success::after { background-color: var(--mn-success); }
+.stat-card.stat-danger::after { background-color: var(--mn-danger); }
+.stat-card.stat-teal::after { background-color: var(--mn-teal); }
+
+.stat-card-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--mn-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card-value {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--mn-text-main);
+    line-height: 1;
+}
+
+.stat-card-icon {
+    position: absolute;
+    right: 1.25rem;
+    top: 1.5rem;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+}
+
+/* Category Badges */
+.badge-category-WATER {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.badge-category-ROAD {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.badge-category-STREETLIGHT {
+    background-color: #fef9c3;
+    color: #854d0e;
+    border: 1px solid #fef08a;
+}
+
+.badge-category-WASTE {
+    background-color: #ccfbf1;
+    color: #115e59;
+    border: 1px solid #99f6e4;
+}
+
+/* Severity Badges */
+.badge-severity-CRITICAL {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    font-weight: 700;
+}
+
+.badge-severity-HIGH {
+    background-color: #ffedd5;
+    color: #9a3412;
+    border: 1px solid #fed7aa;
+}
+
+.badge-severity-MEDIUM {
+    background-color: #e0e7ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+}
+
+.badge-severity-LOW {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+/* Status Badges */
+.badge-status-REGISTERED {
+    background-color: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.badge-status-ASSIGNED {
+    background-color: #e0f2fe;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+}
+
+.badge-status-IN_PROGRESS {
+    background-color: #ede9fe;
+    color: #6d28d9;
+    border: 1px solid #ddd6fe;
+}
+
+.badge-status-RESOLVED {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+/* Duplicate Badges */
+.badge-dup-FLAGGED {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+}
+
+.badge-dup-CONFIRMED {
+    background-color: #f3e8ff;
+    color: #7e22ce;
+    border: 1px solid #d8b4fe;
+}
+
+.badge-dup-DISMISSED {
+    background-color: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--mn-blue) 0%, #0369a1 100%);
+    border: none;
+    font-weight: 600;
+    padding: 0.6rem 1.4rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+}
+
+.btn-teal {
+    background: linear-gradient(135deg, var(--mn-teal) 0%, #0f766e 100%);
+    color: #ffffff;
+    border: none;
+    font-weight: 600;
+    padding: 0.6rem 1.4rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+}
+
+.btn-teal:hover {
+    background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+    color: #ffffff;
+}
+
+.btn-outline-primary {
+    border-color: var(--mn-blue);
+    color: var(--mn-blue);
+    font-weight: 600;
+}
+
+/* Timeline Components */
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+    margin-left: 0.5rem;
+    border-left: 2px dashed var(--mn-border);
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -2.35rem;
+    top: 0.15rem;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background-color: var(--mn-blue);
+    border: 3px solid #ffffff;
+    box-shadow: 0 0 0 2px var(--mn-blue);
+}
+
+.timeline-item.active::before {
+    background-color: var(--mn-success);
+    box-shadow: 0 0 0 2px var(--mn-success);
+}
+
+.timeline-time {
+    font-size: 0.78rem;
+    color: var(--mn-text-muted);
+}
+
+/* Service Category Feature Box */
+.service-box {
+    background: #ffffff;
+    border-radius: var(--mn-radius);
+    padding: 1.75rem;
+    border: 1px solid var(--mn-border);
+    transition: all 0.25s ease;
+    height: 100%;
+}
+
+.service-box:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--mn-shadow-lg);
+    border-color: var(--mn-teal);
+}
+
+.service-box-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+/* Process Step Box */
+.step-box {
+    text-align: center;
+    padding: 1.5rem;
+    position: relative;
+}
+
+.step-num {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--mn-navy) 0%, var(--mn-teal) 100%);
+    color: #ffffff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    box-shadow: 0 4px 10px rgba(15, 39, 68, 0.2);
+}
+
+/* Footer */
+.mn-footer {
+    background-color: var(--mn-navy-dark);
+    color: #94a3b8;
+    padding: 3rem 0 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 4rem;
+}
+
+.mn-footer a {
+    color: #cbd5e1;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.mn-footer a:hover {
+    color: #38bdf8;
+}
+
+/* Form Styles */
+.form-label {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--mn-navy);
+}
+
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 1px solid var(--mn-border);
+    padding: 0.65rem 0.9rem;
+    font-size: 0.95rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--mn-blue);
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+/* Tables */
+.table th {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: var(--mn-text-muted);
+    background-color: #f8fafc;
+    border-bottom: 2px solid var(--mn-border);
+    padding: 0.85rem 1rem;
+}
+
+.table td {
+    padding: 0.9rem 1rem;
+    vertical-align: middle;
+    font-size: 0.92rem;
+    border-bottom: 1px solid var(--mn-border);
+}
+
+/* Alert Notification */
+.mn-alert {
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid transparent;
+}
