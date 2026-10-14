@@ -24,13 +24,16 @@ public class DashboardService {
     private final ComplaintRepository complaintRepository;
     private final DepartmentRepository departmentRepository;
     private final ComplaintService complaintService;
+    private final com.makkalnagar.repository.DuplicateLinkRepository duplicateLinkRepository;
 
     public DashboardService(ComplaintRepository complaintRepository,
                             DepartmentRepository departmentRepository,
-                            ComplaintService complaintService) {
+                            ComplaintService complaintService,
+                            com.makkalnagar.repository.DuplicateLinkRepository duplicateLinkRepository) {
         this.complaintRepository = complaintRepository;
         this.departmentRepository = departmentRepository;
         this.complaintService = complaintService;
+        this.duplicateLinkRepository = duplicateLinkRepository;
     }
 
     @Transactional(readOnly = true)
@@ -74,6 +77,7 @@ public class DashboardService {
         summary.setResolvedCount(resolved);
         summary.setWaitingForCapacityCount(registered);
         summary.setHighSeverityUnresolvedCount(highSeverityUnresolved);
+        summary.setDuplicatesFlaggedCount(duplicateLinkRepository.count());
         summary.setRecentComplaints(recentDtos);
         summary.setHighestPriorityWaiting(waitingDtos);
 

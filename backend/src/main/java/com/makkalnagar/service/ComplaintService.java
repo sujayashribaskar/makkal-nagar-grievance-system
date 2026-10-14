@@ -33,32 +33,32 @@ public class ComplaintService {
     private final CitizenRepository citizenRepository;
     private final AssignmentRepository assignmentRepository;
     private final StatusUpdateRepository statusUpdateRepository;
-    private final DuplicateLinkRepository duplicateLinkRepository;
     private final ArrivalSequenceRepository arrivalSequenceRepository;
     private final DepartmentQueueService departmentQueueService;
+    private final DuplicateService duplicateService;
 
     public ComplaintService(ComplaintRepository complaintRepository,
                             DepartmentRepository departmentRepository,
                             CitizenRepository citizenRepository,
                             AssignmentRepository assignmentRepository,
                             StatusUpdateRepository statusUpdateRepository,
-                            DuplicateLinkRepository duplicateLinkRepository,
                             ArrivalSequenceRepository arrivalSequenceRepository,
-                            DepartmentQueueService departmentQueueService) {
+                            DepartmentQueueService departmentQueueService,
+                            DuplicateService duplicateService) {
         this.complaintRepository = complaintRepository;
         this.departmentRepository = departmentRepository;
         this.citizenRepository = citizenRepository;
         this.assignmentRepository = assignmentRepository;
         this.statusUpdateRepository = statusUpdateRepository;
-        this.duplicateLinkRepository = duplicateLinkRepository;
         this.arrivalSequenceRepository = arrivalSequenceRepository;
         this.departmentQueueService = departmentQueueService;
+        this.duplicateService = duplicateService;
     }
 
     /**
      * Registers a new complaint from a citizen.
-     * Enforces atomic arrival ordering, category-to-department mapping,
-     * duplicate candidate checks, and department capacity verification.
+     * Enforces unique complaint ID validation, category-to-department routing,
+     * automatic duplicate detection, and department capacity verification.
      */
     @Transactional
     public ComplaintResponse registerComplaint(ComplaintRegistrationRequest request) {
@@ -66,20 +66,37 @@ public class ComplaintService {
                 request.getCategory(), request.getLocation());
 
         // 1. Validate location
-        if (!VALID_LOCATIONS.contains(request.getLocation())) {
+        String requestedLocation = request.getLocation() != null ? request.getLocation().trim() : "";
+        if (!VALID_LOCATIONS.contains(requestedLocation)) {
             throw new InvalidOperationException("Invalid location '" + request.getLocation() +
                     "'. Allowed municipal zones are: " + String.join(", ", VALID_LOCATIONS));
         }
 
-        // 2. Safely generate deterministic arrival order using database-backed atomic sequence
+        // 2. Generate deterministic arrival order using database-backed atomic sequence
         ArrivalSequenceEntity seq = arrivalSequenceRepository.findByNameForUpdate("complaint_arrival")
                 .orElseGet(() -> arrivalSequenceRepository.save(new ArrivalSequenceEntity("complaint_arrival", 0L)));
         long arrivalOrder = seq.getCurrentVal() + 1;
         seq.setCurrentVal(arrivalOrder);
         arrivalSequenceRepository.save(seq);
 
-        // 3. Generate unique municipal complaint ID
-        String complaintId = String.format("MN-2026-%04d", arrivalOrder);
+        // 3. Unique Complaint ID Validation & Generation
+        String complaintId;
+        if (request.getComplaintId() != null && !request.getComplaintId().isBlank()) {
+            String customId = request.getComplaintId().trim();
+            if (complaintRepository.findByComplaintId(customId).isPresent()) {
+                throw new InvalidOperationException("Complaint ID conflict: A complaint with ID '" + customId +
+                        "' already exists in the system. Repeated complaint IDs are rejected.");
+            }
+            complaintId = customId;
+        } else {
+            complaintId = String.format("MN-2026-%04d", arrivalOrder);
+            while (complaintRepository.findByComplaintId(complaintId).isPresent()) {
+                arrivalOrder++;
+                seq.setCurrentVal(arrivalOrder);
+                arrivalSequenceRepository.save(seq);
+                complaintId = String.format("MN-2026-%04d", arrivalOrder);
+            }
+        }
 
         // 4. Resolve or create citizen record
         CitizenEntity citizen = resolveCitizen(request, arrivalOrder);
@@ -88,13 +105,13 @@ public class ComplaintService {
         DepartmentEntity department = departmentRepository.findByCode(request.getCategory())
                 .orElseThrow(() -> new ResourceNotFoundException("Department for category " + request.getCategory() + " not found"));
 
-        // 6. Build complaint entity
+        // 6. Build complaint entity (Initial status is always REGISTERED)
         ComplaintEntity complaint = new ComplaintEntity();
         complaint.setComplaintId(complaintId);
         complaint.setCitizen(citizen);
         complaint.setCategory(request.getCategory());
         complaint.setDescription(request.getDescription().trim());
-        complaint.setLocation(request.getLocation());
+        complaint.setLocation(requestedLocation);
         complaint.setSeverity(request.getSeverity());
         complaint.setAffectedCount(request.getAffectedCount());
         complaint.setArrivalOrder(arrivalOrder);
@@ -119,9 +136,10 @@ public class ComplaintService {
         // Save Complaint to MySQL
         complaint = complaintRepository.save(complaint);
 
-        // Audit Trail: Initial Registration Status Update
+        // Audit Trail: Initial Registration Status Update (REGISTERED)
         StatusUpdateEntity regUpdate = new StatusUpdateEntity(
-                complaint, null, ComplaintStatus.REGISTERED, "CITIZEN", "Complaint submitted through Makkal Nagar Citizen Portal"
+                complaint, null, ComplaintStatus.REGISTERED, "CITIZEN",
+                "CITIZEN_REGISTRATION", "Complaint submitted through Makkal Nagar Citizen Portal"
         );
         statusUpdateRepository.save(regUpdate);
 
@@ -129,6 +147,7 @@ public class ComplaintService {
             // Audit Trail: Status Update to ASSIGNED
             StatusUpdateEntity assignUpdate = new StatusUpdateEntity(
                     complaint, ComplaintStatus.REGISTERED, ComplaintStatus.ASSIGNED, "SYSTEM",
+                    "AUTOMATIC_CAPACITY_ASSIGNMENT",
                     "Capacity available in " + department.getName() + " (" + activeCount + "/" + department.getCapacity() + "). Assigned immediately."
             );
             statusUpdateRepository.save(assignUpdate);
@@ -139,17 +158,20 @@ public class ComplaintService {
             );
             assignmentRepository.save(assignment);
         } else {
-            // Department is full: Enqueue into in-memory PriorityQueue
+            // Department is full: Enqueue into PriorityQueue while remaining in REGISTERED status
             StatusUpdateEntity queueUpdate = new StatusUpdateEntity(
                     complaint, ComplaintStatus.REGISTERED, ComplaintStatus.REGISTERED, "SYSTEM",
+                    "DEPARTMENT_QUEUE_WAITING",
                     "Department at maximum capacity (" + activeCount + "/" + department.getCapacity() + "). Placed in priority waiting queue."
             );
             statusUpdateRepository.save(queueUpdate);
             departmentQueueService.enqueueWaiting(complaint);
         }
 
-        // 8. Duplicate Detection Check
-        checkAndRecordPotentialDuplicates(complaint);
+        // 8. Automatic Duplicate Detection
+        // Compare new complaint against all existing system complaints
+        List<ComplaintEntity> existingComplaints = complaintRepository.findAll();
+        duplicateService.evaluateAndPersistDuplicates(complaint, existingComplaints);
 
         return mapToResponse(complaint, false);
     }
@@ -175,32 +197,187 @@ public class ComplaintService {
     }
 
     /**
-     * Checks for open complaints in the same category & location, or matching open issue references.
-     * Flags candidates for administrative operator review without auto-deleting or merging.
+     * Operational Event: Assigned department begins processing the complaint.
+     * Transitions status automatically: ASSIGNED -> IN_PROGRESS.
      */
-    private void checkAndRecordPotentialDuplicates(ComplaintEntity newComplaint) {
-        List<ComplaintStatus> openStatuses = List.of(ComplaintStatus.REGISTERED, ComplaintStatus.ASSIGNED, ComplaintStatus.IN_PROGRESS);
+    @Transactional
+    public ComplaintResponse startDepartmentWork(Long id, String remarks, String actor) {
+        ComplaintEntity complaint = complaintRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Complaint not found with ID: " + id));
 
-        // Find matches in same category & location
-        List<ComplaintEntity> candidates = complaintRepository.findByCategoryAndLocationAndStatusIn(
-                newComplaint.getCategory(), newComplaint.getLocation(), openStatuses);
+        if (complaint.getStatus() != ComplaintStatus.ASSIGNED) {
+            throw new InvalidOperationException("Cannot start work on complaint " + complaint.getComplaintId() +
+                    ": Current status is " + complaint.getStatus() + ". Work can only start on ASSIGNED complaints.");
+        }
 
-        for (ComplaintEntity existing : candidates) {
-            if (existing.getId().equals(newComplaint.getId())) continue;
+        complaint.setStatus(ComplaintStatus.IN_PROGRESS);
+        complaint.setUpdatedAt(LocalDateTime.now());
+        complaint = complaintRepository.save(complaint);
 
-            String reason = "Shares identical Category (" + newComplaint.getCategory().getDisplayName() +
-                    ") and Location (" + newComplaint.getLocation() + ") with open complaint " + existing.getComplaintId();
+        String note = (remarks != null && !remarks.isBlank()) ? remarks.trim() : "Department field crew commenced operations on site";
+        StatusUpdateEntity statusUpdate = new StatusUpdateEntity(
+                complaint, ComplaintStatus.ASSIGNED, ComplaintStatus.IN_PROGRESS,
+                actor != null ? actor : "SYSTEM", "DEPARTMENT_WORK_STARTED", note
+        );
+        statusUpdateRepository.save(statusUpdate);
 
-            if (newComplaint.getOpenIssueRef() != null &&
-                newComplaint.getOpenIssueRef().equalsIgnoreCase(existing.getOpenIssueRef())) {
-                reason += " and matching Open Issue Reference [" + newComplaint.getOpenIssueRef() + "]";
+        log.info("Complaint {} transitioned to IN_PROGRESS by actor {}: {}", complaint.getComplaintId(), actor, note);
+        return mapToResponse(complaint, true);
+    }
+
+    /**
+     * Resolution Workflow: Verifies resolution details and transitions status: IN_PROGRESS -> RESOLVED.
+     * Automatically frees department capacity and assigns the highest-priority eligible waiting complaint.
+     */
+    @Transactional
+    public ComplaintResponse recordVerifiedResolution(Long id, String resolutionNotes, String remarks, String actor) {
+        ComplaintEntity complaint = complaintRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Complaint not found with ID: " + id));
+
+        if (complaint.getStatus() != ComplaintStatus.IN_PROGRESS) {
+            throw new InvalidOperationException("Cannot resolve complaint " + complaint.getComplaintId() +
+                    ": Current status is " + complaint.getStatus() + ". A complaint must be IN_PROGRESS before resolution can be verified.");
+        }
+
+        if (resolutionNotes == null || resolutionNotes.trim().isBlank()) {
+            throw new InvalidOperationException("Resolution notes are required to verify and resolve the complaint.");
+        }
+
+        complaint.setStatus(ComplaintStatus.RESOLVED);
+        complaint.setResolutionNotes(resolutionNotes.trim());
+        complaint.setResolvedAt(LocalDateTime.now());
+        complaint.setUpdatedAt(LocalDateTime.now());
+        complaint = complaintRepository.save(complaint);
+
+        String note = (remarks != null && !remarks.isBlank()) ? remarks.trim() : ("Resolution verified: " + resolutionNotes.trim());
+        StatusUpdateEntity statusUpdate = new StatusUpdateEntity(
+                complaint, ComplaintStatus.IN_PROGRESS, ComplaintStatus.RESOLVED,
+                actor != null ? actor : "SYSTEM", "RESOLUTION_VERIFIED", note
+        );
+        statusUpdateRepository.save(statusUpdate);
+
+        log.info("Complaint {} resolved and verified by {}. Notes: {}", complaint.getComplaintId(), actor, resolutionNotes);
+
+        // When a complaint is resolved, capacity is freed in that department: auto-dispatch waiting queue!
+        if (complaint.getDepartment() != null) {
+            dispatchNextWaitingComplaint(complaint.getDepartment());
+        }
+
+        return mapToResponse(complaint, true);
+    }
+
+    /**
+     * Rejects arbitrary manual status changes.
+     */
+    @Transactional
+    public ComplaintResponse updateStatus(Long id, StatusUpdateRequest request, String actor) {
+        throw new InvalidOperationException("Manual status modification is prohibited. Complaint statuses are managed automatically by system events: 'start-work' triggers IN_PROGRESS and 'resolve' triggers RESOLVED upon verification.");
+    }
+
+    /**
+     * Reassigns a complaint to another department.
+     */
+    @Transactional
+    public ComplaintResponse reassignDepartment(Long complaintId, AssignRequest request, String actor) {
+        ComplaintEntity complaint = complaintRepository.findById(complaintId)
+                .orElseThrow(() -> new ResourceNotFoundException("Complaint not found with ID: " + complaintId));
+
+        DepartmentEntity targetDept = departmentRepository.findById(request.getDepartmentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Target department not found with ID: " + request.getDepartmentId()));
+
+        DepartmentEntity oldDept = complaint.getDepartment();
+
+        // Check target department capacity if this complaint is currently active
+        boolean isActive = complaint.getStatus() == ComplaintStatus.ASSIGNED || complaint.getStatus() == ComplaintStatus.IN_PROGRESS;
+        if (isActive) {
+            long targetActive = complaintRepository.countByDepartmentIdAndStatusIn(
+                    targetDept.getId(), List.of(ComplaintStatus.ASSIGNED, ComplaintStatus.IN_PROGRESS));
+            if (targetActive >= targetDept.getCapacity()) {
+                throw new CapacityExceededException("Target department " + targetDept.getName() +
+                        " is at full capacity (" + targetActive + "/" + targetDept.getCapacity() + "). Reassignment rejected.");
+            }
+        }
+
+        complaint.setDepartment(targetDept);
+        complaint.setUpdatedAt(LocalDateTime.now());
+        complaintRepository.save(complaint);
+
+        String note = request.getNotes() != null && !request.getNotes().isBlank() ?
+                request.getNotes() : "Administrative reassignment from " + (oldDept != null ? oldDept.getName() : "None") + " to " + targetDept.getName();
+
+        AssignmentEntity assignment = new AssignmentEntity(complaint, targetDept, actor, note);
+        assignmentRepository.save(assignment);
+
+        StatusUpdateEntity statusUpdate = new StatusUpdateEntity(
+                complaint, complaint.getStatus(), complaint.getStatus(), actor,
+                "ADMINISTRATIVE_REASSIGNMENT", "Reassigned to " + targetDept.getName() + " (" + note + ")"
+        );
+        statusUpdateRepository.save(statusUpdate);
+
+        // If old department had an active slot freed, dispatch its waiting queue!
+        if (isActive && oldDept != null && !oldDept.getId().equals(targetDept.getId())) {
+            dispatchNextWaitingComplaint(oldDept);
+        }
+
+        return mapToResponse(complaint, true);
+    }
+
+    /**
+     * Checks if the department has available capacity and dispatches the highest-priority waiting complaints.
+     * Continues processing eligible waiting complaints while capacity remains available.
+     * Synchronized to prevent concurrent requests from exceeding department capacity.
+     */
+    @Transactional
+    public synchronized void dispatchNextWaitingComplaint(DepartmentEntity department) {
+        if (department == null) return;
+
+        while (true) {
+            long activeCount = complaintRepository.countByDepartmentIdAndStatusIn(
+                    department.getId(), List.of(ComplaintStatus.ASSIGNED, ComplaintStatus.IN_PROGRESS));
+
+            if (activeCount >= department.getCapacity()) {
+                log.info("Department {} reached capacity ({}/{}). Stopping auto-dispatch.",
+                        department.getName(), activeCount, department.getCapacity());
+                break;
             }
 
-            if (duplicateLinkRepository.findPair(newComplaint.getId(), existing.getId()).isEmpty()) {
-                DuplicateLinkEntity link = new DuplicateLinkEntity(newComplaint, existing, DuplicateStatus.FLAGGED, reason);
-                duplicateLinkRepository.save(link);
-                log.info("Flagged possible duplicate candidate between {} and {}: {}",
-                        newComplaint.getComplaintId(), existing.getComplaintId(), reason);
+            List<Grievance> waitingQueue = departmentQueueService.getWaitingQueueSnapshot(department.getCode());
+            if (waitingQueue.isEmpty()) {
+                log.debug("No waiting complaints in queue for department {}.", department.getName());
+                break;
+            }
+
+            Grievance topGrievance = waitingQueue.get(0);
+            Optional<ComplaintEntity> optComplaint = complaintRepository.findByComplaintId(topGrievance.getComplaintId());
+
+            if (optComplaint.isPresent()) {
+                ComplaintEntity waitingComplaint = optComplaint.get();
+                if (waitingComplaint.getStatus() == ComplaintStatus.REGISTERED) {
+                    waitingComplaint.setStatus(ComplaintStatus.ASSIGNED);
+                    waitingComplaint.setUpdatedAt(LocalDateTime.now());
+                    complaintRepository.save(waitingComplaint);
+
+                    AssignmentEntity assignment = new AssignmentEntity(
+                            waitingComplaint, department, "SYSTEM",
+                            "Auto-dispatched from priority waiting queue upon capacity release"
+                    );
+                    assignmentRepository.save(assignment);
+
+                    StatusUpdateEntity statusUpdate = new StatusUpdateEntity(
+                            waitingComplaint, ComplaintStatus.REGISTERED, ComplaintStatus.ASSIGNED, "SYSTEM",
+                            "QUEUE_AUTO_DISPATCH",
+                            "Promoted from waiting queue to ASSIGNED (Department capacity slot available: " + (activeCount + 1) + "/" + department.getCapacity() + ")"
+                    );
+                    statusUpdateRepository.save(statusUpdate);
+
+                    departmentQueueService.removeWaiting(waitingComplaint);
+                    log.info("Auto-dispatched waiting complaint {} to {} upon capacity release.",
+                            waitingComplaint.getComplaintId(), department.getName());
+                } else {
+                    departmentQueueService.removeWaiting(waitingComplaint);
+                }
+            } else {
+                break;
             }
         }
     }
@@ -256,148 +433,6 @@ public class ComplaintService {
         return page.map(c -> mapToResponse(c, false));
     }
 
-    /**
-     * Updates complaint status with validation.
-     * When a complaint is marked RESOLVED, releases department capacity and
-     * automatically pulls and assigns the highest-priority waiting complaint from that department.
-     */
-    @Transactional
-    public ComplaintResponse updateStatus(Long id, StatusUpdateRequest request, String actor) {
-        ComplaintEntity complaint = complaintRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Complaint not found with ID: " + id));
-
-        ComplaintStatus current = complaint.getStatus();
-        ComplaintStatus next = request.getNewStatus();
-
-        if (!current.canTransitionTo(next)) {
-            throw new InvalidOperationException("Illegal status transition for complaint " +
-                    complaint.getComplaintId() + ": Cannot transition from " + current + " to " + next);
-        }
-
-        if (next == ComplaintStatus.RESOLVED) {
-            if (request.getResolutionNotes() == null || request.getResolutionNotes().trim().isBlank()) {
-                throw new InvalidOperationException("Resolution notes are required when marking a complaint RESOLVED.");
-            }
-            complaint.setResolutionNotes(request.getResolutionNotes().trim());
-            complaint.setResolvedAt(LocalDateTime.now());
-        }
-
-        complaint.setStatus(next);
-        complaint.setUpdatedAt(LocalDateTime.now());
-        complaint = complaintRepository.save(complaint);
-
-        String remark = request.getRemarks() != null && !request.getRemarks().isBlank() ?
-                request.getRemarks().trim() : ("Status updated to " + next.getDisplayName());
-        if (next == ComplaintStatus.RESOLVED) {
-            remark = "Resolved: " + complaint.getResolutionNotes();
-        }
-
-        StatusUpdateEntity statusUpdate = new StatusUpdateEntity(complaint, current, next, actor, remark);
-        statusUpdateRepository.save(statusUpdate);
-
-        // When a complaint is resolved, capacity is freed in that department!
-        if (next == ComplaintStatus.RESOLVED && complaint.getDepartment() != null) {
-            dispatchNextWaitingComplaint(complaint.getDepartment());
-        }
-
-        return mapToResponse(complaint, true);
-    }
-
-    /**
-     * Reassigns a complaint to another department.
-     */
-    @Transactional
-    public ComplaintResponse reassignDepartment(Long complaintId, AssignRequest request, String actor) {
-        ComplaintEntity complaint = complaintRepository.findById(complaintId)
-                .orElseThrow(() -> new ResourceNotFoundException("Complaint not found with ID: " + complaintId));
-
-        DepartmentEntity targetDept = departmentRepository.findById(request.getDepartmentId())
-                .orElseThrow(() -> new ResourceNotFoundException("Target department not found with ID: " + request.getDepartmentId()));
-
-        DepartmentEntity oldDept = complaint.getDepartment();
-
-        // Check target department capacity if this complaint is currently active
-        boolean isActive = complaint.getStatus() == ComplaintStatus.ASSIGNED || complaint.getStatus() == ComplaintStatus.IN_PROGRESS;
-        if (isActive) {
-            long targetActive = complaintRepository.countByDepartmentIdAndStatusIn(
-                    targetDept.getId(), List.of(ComplaintStatus.ASSIGNED, ComplaintStatus.IN_PROGRESS));
-            if (targetActive >= targetDept.getCapacity()) {
-                throw new CapacityExceededException("Target department " + targetDept.getName() +
-                        " is at full capacity (" + targetActive + "/" + targetDept.getCapacity() + "). Reassignment rejected.");
-            }
-        }
-
-        complaint.setDepartment(targetDept);
-        complaint.setUpdatedAt(LocalDateTime.now());
-        complaintRepository.save(complaint);
-
-        String note = request.getNotes() != null && !request.getNotes().isBlank() ?
-                request.getNotes() : "Administrative reassignment from " + (oldDept != null ? oldDept.getName() : "None") + " to " + targetDept.getName();
-
-        AssignmentEntity assignment = new AssignmentEntity(complaint, targetDept, actor, note);
-        assignmentRepository.save(assignment);
-
-        StatusUpdateEntity statusUpdate = new StatusUpdateEntity(
-                complaint, complaint.getStatus(), complaint.getStatus(), actor, "Reassigned to " + targetDept.getName() + " (" + note + ")"
-        );
-        statusUpdateRepository.save(statusUpdate);
-
-        // If old department had an active slot freed, dispatch its waiting queue!
-        if (isActive && oldDept != null && !oldDept.getId().equals(targetDept.getId())) {
-            dispatchNextWaitingComplaint(oldDept);
-        }
-
-        return mapToResponse(complaint, true);
-    }
-
-    /**
-     * Checks if the department has available capacity and dispatches the highest-priority waiting complaint.
-     */
-    @Transactional
-    public void dispatchNextWaitingComplaint(DepartmentEntity department) {
-        long activeCount = complaintRepository.countByDepartmentIdAndStatusIn(
-                department.getId(), List.of(ComplaintStatus.ASSIGNED, ComplaintStatus.IN_PROGRESS));
-
-        if (activeCount >= department.getCapacity()) {
-            return; // Department is full
-        }
-
-        // Pull highest priority waiting complaint using domain policy
-        List<Grievance> waitingQueue = departmentQueueService.getWaitingQueueSnapshot(department.getCode());
-        if (waitingQueue.isEmpty()) {
-            return; // No waiting complaints
-        }
-
-        Grievance topGrievance = waitingQueue.get(0);
-        Optional<ComplaintEntity> optComplaint = complaintRepository.findByComplaintId(topGrievance.getComplaintId());
-
-        if (optComplaint.isPresent()) {
-            ComplaintEntity waitingComplaint = optComplaint.get();
-            if (waitingComplaint.getStatus() == ComplaintStatus.REGISTERED) {
-                waitingComplaint.setStatus(ComplaintStatus.ASSIGNED);
-                waitingComplaint.setUpdatedAt(LocalDateTime.now());
-                complaintRepository.save(waitingComplaint);
-
-                AssignmentEntity assignment = new AssignmentEntity(
-                        waitingComplaint, department, "SYSTEM",
-                        "Auto-dispatched from priority waiting queue upon capacity release"
-                );
-                assignmentRepository.save(assignment);
-
-                StatusUpdateEntity statusUpdate = new StatusUpdateEntity(
-                        waitingComplaint, ComplaintStatus.REGISTERED, ComplaintStatus.ASSIGNED, "SYSTEM",
-                        "Promoted from waiting queue to ASSIGNED (Department capacity slot available)"
-                );
-                statusUpdateRepository.save(statusUpdate);
-
-                // Update in-memory queue
-                departmentQueueService.removeWaiting(waitingComplaint);
-                log.info("Auto-dispatched waiting complaint {} to {} upon capacity release.",
-                        waitingComplaint.getComplaintId(), department.getName());
-            }
-        }
-    }
-
     public ComplaintResponse mapToResponse(ComplaintEntity entity, boolean includeHistory) {
         ComplaintResponse dto = new ComplaintResponse();
         dto.setId(entity.getId());
@@ -438,6 +473,7 @@ public class ComplaintService {
                     s.getPreviousStatus() != null ? s.getPreviousStatus().name() : null,
                     s.getNewStatus().name(),
                     s.getChangedBy(),
+                    s.getTriggeringEvent(),
                     s.getRemarks(),
                     s.getCreatedAt()
             )).collect(Collectors.toList()));

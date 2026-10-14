@@ -9,6 +9,8 @@ import jakarta.validation.constraints.Size;
 
 public class ComplaintRegistrationRequest {
 
+    private String complaintId;
+
     @NotBlank(message = "Citizen name is required")
     @Size(min = 2, max = 100, message = "Citizen name must be between 2 and 100 characters")
     private String citizenName;
@@ -39,6 +41,9 @@ public class ComplaintRegistrationRequest {
     private String openIssueRef;
 
     public ComplaintRegistrationRequest() {}
+
+    public String getComplaintId() { return complaintId; }
+    public void setComplaintId(String complaintId) { this.complaintId = complaintId; }
 
     public String getCitizenName() { return citizenName; }
     public void setCitizenName(String citizenName) { this.citizenName = citizenName; }

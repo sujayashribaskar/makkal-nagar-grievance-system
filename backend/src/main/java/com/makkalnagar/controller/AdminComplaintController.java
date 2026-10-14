@@ -64,6 +64,40 @@ public class AdminComplaintController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Defined Department Operational Event: Start field operations.
+     * Automatically transitions ASSIGNED -> IN_PROGRESS.
+     */
+    @PostMapping("/{id}/start-work")
+    public ResponseEntity<ComplaintResponse> startDepartmentWork(
+            @PathVariable Long id,
+            @RequestBody(required = false) StartWorkRequest request,
+            Authentication authentication) {
+        String actor = authentication != null ? authentication.getName() : "admin";
+        String remarks = request != null ? request.getRemarks() : null;
+        ComplaintResponse response = complaintService.startDepartmentWork(id, remarks, actor);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Configured Resolution Workflow: Verified resolution submission.
+     * Automatically transitions IN_PROGRESS -> RESOLVED and dispatches queued complaints.
+     */
+    @PostMapping("/{id}/resolve")
+    public ResponseEntity<ComplaintResponse> recordVerifiedResolution(
+            @PathVariable Long id,
+            @Valid @RequestBody ResolveComplaintRequest request,
+            Authentication authentication) {
+        String actor = authentication != null ? authentication.getName() : "admin";
+        ComplaintResponse response = complaintService.recordVerifiedResolution(
+                id, request.getResolutionNotes(), request.getRemarks(), actor);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Manual status override attempt endpoint.
+     * Strictly rejects arbitrary manual status changes.
+     */
     @PatchMapping("/{id}/status")
     public ResponseEntity<ComplaintResponse> updateStatus(
             @PathVariable Long id,

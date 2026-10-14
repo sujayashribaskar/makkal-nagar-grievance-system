@@ -27,6 +27,9 @@ public class StatusUpdateEntity {
     @Column(name = "changed_by", nullable = false, length = 100)
     private String changedBy = "SYSTEM";
 
+    @Column(name = "triggering_event", nullable = false, length = 100)
+    private String triggeringEvent = "SYSTEM_EVENT";
+
     @Column(columnDefinition = "TEXT")
     private String remarks;
 
@@ -36,10 +39,15 @@ public class StatusUpdateEntity {
     public StatusUpdateEntity() {}
 
     public StatusUpdateEntity(ComplaintEntity complaint, ComplaintStatus previousStatus, ComplaintStatus newStatus, String changedBy, String remarks) {
+        this(complaint, previousStatus, newStatus, changedBy, "SYSTEM_EVENT", remarks);
+    }
+
+    public StatusUpdateEntity(ComplaintEntity complaint, ComplaintStatus previousStatus, ComplaintStatus newStatus, String changedBy, String triggeringEvent, String remarks) {
         this.complaint = complaint;
         this.previousStatus = previousStatus;
         this.newStatus = newStatus;
         this.changedBy = changedBy;
+        this.triggeringEvent = triggeringEvent != null ? triggeringEvent : "SYSTEM_EVENT";
         this.remarks = remarks;
         this.createdAt = LocalDateTime.now();
     }
@@ -58,6 +66,9 @@ public class StatusUpdateEntity {
 
     public String getChangedBy() { return changedBy; }
     public void setChangedBy(String changedBy) { this.changedBy = changedBy; }
+
+    public String getTriggeringEvent() { return triggeringEvent; }
+    public void setTriggeringEvent(String triggeringEvent) { this.triggeringEvent = triggeringEvent; }
 
     public String getRemarks() { return remarks; }
     public void setRemarks(String remarks) { this.remarks = remarks; }

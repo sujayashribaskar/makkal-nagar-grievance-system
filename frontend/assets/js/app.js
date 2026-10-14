@@ -169,6 +169,28 @@ function getStatusBadge(status) {
     return `<span class="badge badge-status-${status} px-2 py-1">${labels[status] || status}</span>`;
 }
 
+function getEventBadge(event) {
+    const labels = {
+        'CITIZEN_REGISTRATION': 'Citizen Registration',
+        'AUTOMATIC_CAPACITY_ASSIGNMENT': 'Capacity Auto-Assignment',
+        'DEPARTMENT_QUEUE_WAITING': 'Queued (Capacity Full)',
+        'DEPARTMENT_WORK_STARTED': 'Department Work Started',
+        'RESOLUTION_VERIFIED': 'Resolution Verified',
+        'QUEUE_AUTO_DISPATCH': 'Queue Auto-Dispatch',
+        'ADMINISTRATIVE_REASSIGNMENT': 'Reassigned'
+    };
+    return `<span class="badge badge-event-${event || 'SYSTEM_EVENT'} px-2 py-1">${labels[event] || event || 'System Event'}</span>`;
+}
+
+function getDuplicateBadge(status, confidenceScore) {
+    const pct = confidenceScore != null ? Math.round(confidenceScore * 100) : null;
+    const pctLabel = pct !== null ? ` (${pct}%)` : '';
+    if (status === 'CONFIRMED' || status === 'CONFIRMED_DUPLICATE' || (confidenceScore != null && confidenceScore >= 0.85)) {
+        return `<span class="badge badge-dup-CONFIRMED_DUPLICATE px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Confirmed Duplicate${pctLabel}</span>`;
+    }
+    return `<span class="badge badge-dup-POSSIBLE_DUPLICATE px-2 py-1"><i class="bi bi-exclamation-circle me-1"></i>Possible Duplicate${pctLabel}</span>`;
+}
+
 function formatDate(isoString) {
     if (!isoString) return '—';
     try {

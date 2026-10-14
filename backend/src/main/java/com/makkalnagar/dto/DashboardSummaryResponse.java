@@ -11,6 +11,7 @@ public class DashboardSummaryResponse {
     private long resolvedCount;
     private long waitingForCapacityCount;
     private long highSeverityUnresolvedCount;
+    private long duplicatesFlaggedCount;
 
     private List<ComplaintResponse> recentComplaints;
     private List<ComplaintResponse> highestPriorityWaiting;
@@ -37,6 +38,9 @@ public class DashboardSummaryResponse {
 
     public long getHighSeverityUnresolvedCount() { return highSeverityUnresolvedCount; }
     public void setHighSeverityUnresolvedCount(long highSeverityUnresolvedCount) { this.highSeverityUnresolvedCount = highSeverityUnresolvedCount; }
+
+    public long getDuplicatesFlaggedCount() { return duplicatesFlaggedCount; }
+    public void setDuplicatesFlaggedCount(long duplicatesFlaggedCount) { this.duplicatesFlaggedCount = duplicatesFlaggedCount; }
 
     public List<ComplaintResponse> getRecentComplaints() { return recentComplaints; }
     public void setRecentComplaints(List<ComplaintResponse> recentComplaints) { this.recentComplaints = recentComplaints; }

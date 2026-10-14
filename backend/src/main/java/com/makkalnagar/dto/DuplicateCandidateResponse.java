@@ -19,6 +19,9 @@ public class DuplicateCandidateResponse {
     private DuplicateStatus status;
     private String statusDisplayName;
     private String reason;
+    private Double confidenceScore = 0.0;
+    private String similarityDetails;
+    private boolean confirmedDuplicate = false;
     private String reviewedBy;
     private LocalDateTime reviewedAt;
     private LocalDateTime createdAt;
@@ -57,6 +60,15 @@ public class DuplicateCandidateResponse {
 
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }
+
+    public Double getConfidenceScore() { return confidenceScore; }
+    public void setConfidenceScore(Double confidenceScore) { this.confidenceScore = confidenceScore; }
+
+    public String getSimilarityDetails() { return similarityDetails; }
+    public void setSimilarityDetails(String similarityDetails) { this.similarityDetails = similarityDetails; }
+
+    public boolean isConfirmedDuplicate() { return confirmedDuplicate; }
+    public void setConfirmedDuplicate(boolean confirmedDuplicate) { this.confirmedDuplicate = confirmedDuplicate; }
 
     public String getReviewedBy() { return reviewedBy; }
     public void setReviewedBy(String reviewedBy) { this.reviewedBy = reviewedBy; }

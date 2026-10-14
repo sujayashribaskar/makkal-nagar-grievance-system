@@ -43,13 +43,19 @@ public class ComplaintResponse {
         private String previousStatus;
         private String newStatus;
         private String changedBy;
+        private String triggeringEvent;
         private String remarks;
         private LocalDateTime timestamp;
 
         public StatusUpdateDto(String previousStatus, String newStatus, String changedBy, String remarks, LocalDateTime timestamp) {
+            this(previousStatus, newStatus, changedBy, "SYSTEM_EVENT", remarks, timestamp);
+        }
+
+        public StatusUpdateDto(String previousStatus, String newStatus, String changedBy, String triggeringEvent, String remarks, LocalDateTime timestamp) {
             this.previousStatus = previousStatus;
             this.newStatus = newStatus;
             this.changedBy = changedBy;
+            this.triggeringEvent = triggeringEvent;
             this.remarks = remarks;
             this.timestamp = timestamp;
         }
@@ -57,6 +63,7 @@ public class ComplaintResponse {
         public String getPreviousStatus() { return previousStatus; }
         public String getNewStatus() { return newStatus; }
         public String getChangedBy() { return changedBy; }
+        public String getTriggeringEvent() { return triggeringEvent; }
         public String getRemarks() { return remarks; }
         public LocalDateTime getTimestamp() { return timestamp; }
     }

@@ -24,8 +24,14 @@ public class DuplicateLinkEntity {
     @Column(nullable = false, length = 30)
     private DuplicateStatus status = DuplicateStatus.FLAGGED;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, length = 500)
     private String reason;
+
+    @Column(name = "confidence_score", nullable = false)
+    private Double confidenceScore = 0.0;
+
+    @Column(name = "similarity_details", columnDefinition = "TEXT")
+    private String similarityDetails;
 
     @Column(name = "reviewed_by", length = 100)
     private String reviewedBy;
@@ -39,10 +45,17 @@ public class DuplicateLinkEntity {
     public DuplicateLinkEntity() {}
 
     public DuplicateLinkEntity(ComplaintEntity sourceComplaint, ComplaintEntity targetComplaint, DuplicateStatus status, String reason) {
+        this(sourceComplaint, targetComplaint, status, reason, 0.0, null);
+    }
+
+    public DuplicateLinkEntity(ComplaintEntity sourceComplaint, ComplaintEntity targetComplaint, DuplicateStatus status,
+                               String reason, Double confidenceScore, String similarityDetails) {
         this.sourceComplaint = sourceComplaint;
         this.targetComplaint = targetComplaint;
         this.status = status;
         this.reason = reason;
+        this.confidenceScore = confidenceScore != null ? confidenceScore : 0.0;
+        this.similarityDetails = similarityDetails;
         this.createdAt = LocalDateTime.now();
     }
 
@@ -60,6 +73,12 @@ public class DuplicateLinkEntity {
 
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }
+
+    public Double getConfidenceScore() { return confidenceScore; }
+    public void setConfidenceScore(Double confidenceScore) { this.confidenceScore = confidenceScore; }
+
+    public String getSimilarityDetails() { return similarityDetails; }
+    public void setSimilarityDetails(String similarityDetails) { this.similarityDetails = similarityDetails; }
 
     public String getReviewedBy() { return reviewedBy; }
     public void setReviewedBy(String reviewedBy) { this.reviewedBy = reviewedBy; }
