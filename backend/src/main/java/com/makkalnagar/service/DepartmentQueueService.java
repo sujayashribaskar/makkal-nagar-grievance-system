@@ -51,6 +51,14 @@ public class DepartmentQueueService {
         categoryToDepartmentMap.clear();
 
         List<DepartmentEntity> deptEntities = departmentRepository.findAll();
+        if (deptEntities.isEmpty()) {
+            deptEntities = List.of(
+                    departmentRepository.save(new DepartmentEntity(Category.WATER, "Water Supply Department", 5)),
+                    departmentRepository.save(new DepartmentEntity(Category.ROAD, "Roads and Infrastructure Department", 5)),
+                    departmentRepository.save(new DepartmentEntity(Category.STREETLIGHT, "Streetlight and Electrical Department", 5)),
+                    departmentRepository.save(new DepartmentEntity(Category.WASTE, "Sanitation and Waste Management Department", 5))
+            );
+        }
         for (DepartmentEntity de : deptEntities) {
             Department dept = new Department(de.getCode(), de.getName(), de.getCapacity(), priorityPolicy);
             categoryToDepartmentMap.put(de.getCode(), dept);

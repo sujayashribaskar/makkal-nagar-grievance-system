@@ -272,6 +272,10 @@ public class DuplicateDetectionEngine {
     }
 
     private double computeTextSimilarity(String d1, String d2, Set<String> k1, Set<String> k2, List<String> sharedKeywords) {
+        if (d1 == null || d2 == null || d1.isBlank() || d2.isBlank()) {
+            return 0.0;
+        }
+
         String clean1 = d1.trim().toLowerCase();
         String clean2 = d2.trim().toLowerCase();
 
@@ -279,7 +283,7 @@ public class DuplicateDetectionEngine {
             return 1.0;
         }
 
-        if (k1.isEmpty() || k2.isEmpty()) {
+        if (k1 == null || k1.isEmpty() || k2 == null || k2.isEmpty()) {
             return 0.0;
         }
 
