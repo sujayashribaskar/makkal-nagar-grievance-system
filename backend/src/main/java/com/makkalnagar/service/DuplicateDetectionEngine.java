@@ -1,12 +1,10 @@
 package com.makkalnagar.service;
 
 import com.makkalnagar.entity.ComplaintEntity;
-import com.makkalnagar.enums.Category;
 import com.makkalnagar.enums.DuplicateStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Intelligent Duplicate Detection Engine
@@ -142,8 +140,9 @@ public class DuplicateDetectionEngine {
         // 3. Open Issue Reference check
         String refNew = newComp.getOpenIssueRef() != null ? newComp.getOpenIssueRef().trim() : null;
         String refExist = existingComp.getOpenIssueRef() != null ? existingComp.getOpenIssueRef().trim() : null;
-        boolean hasRef = refNew != null && !refNew.isEmpty() && refExist != null && !refExist.isEmpty();
-        boolean sameIssueRef = hasRef && refNew.equalsIgnoreCase(refExist);
+        boolean sameIssueRef = refNew != null && !refNew.isEmpty()
+                && refExist != null && !refExist.isEmpty()
+                && refNew.equalsIgnoreCase(refExist);
 
         // 4. Description Text Similarity
         Set<String> keywordsNew = extractKeywords(newComp.getDescription());

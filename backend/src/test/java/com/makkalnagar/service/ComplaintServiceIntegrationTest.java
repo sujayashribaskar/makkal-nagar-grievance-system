@@ -4,12 +4,11 @@ import com.makkalnagar.dto.*;
 import com.makkalnagar.entity.*;
 import com.makkalnagar.enums.Category;
 import com.makkalnagar.enums.ComplaintStatus;
-import com.makkalnagar.enums.DuplicateStatus;
 import com.makkalnagar.enums.Severity;
+import com.makkalnagar.exception.DuplicateComplaintException;
 import com.makkalnagar.exception.InvalidOperationException;
 import com.makkalnagar.repository.ComplaintRepository;
 import com.makkalnagar.repository.DepartmentRepository;
-import com.makkalnagar.repository.DuplicateLinkRepository;
 import com.makkalnagar.repository.StatusUpdateRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,9 +27,6 @@ class ComplaintServiceIntegrationTest {
     private ComplaintService complaintService;
 
     @Autowired
-    private DepartmentService departmentService;
-
-    @Autowired
     private DuplicateService duplicateService;
 
     @Autowired
@@ -38,9 +34,6 @@ class ComplaintServiceIntegrationTest {
 
     @Autowired
     private DepartmentRepository departmentRepository;
-
-    @Autowired
-    private DuplicateLinkRepository duplicateLinkRepository;
 
     @Autowired
     private StatusUpdateRepository statusUpdateRepository;
@@ -226,7 +219,7 @@ class ComplaintServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("Test 7: Duplicate Detection - Identical Descriptions at Same Location")
+    @DisplayName("Test 7: Duplicate Detection - Identical Descriptions at Same Location are Automatically Discarded")
     @Transactional
     void testDuplicateIdenticalDescriptionsAtSameLocation() {
         ComplaintRegistrationRequest c1 = new ComplaintRegistrationRequest();
@@ -237,6 +230,7 @@ class ComplaintServiceIntegrationTest {
         c1.setSeverity(Severity.HIGH);
         c1.setAffectedCount(50);
         ComplaintResponse r1 = complaintService.registerComplaint(c1);
+        assertNotNull(r1);
 
         ComplaintRegistrationRequest c2 = new ComplaintRegistrationRequest();
         c2.setCitizenName("Citizen 2");
@@ -245,20 +239,17 @@ class ComplaintServiceIntegrationTest {
         c2.setLocation("Anna Nagar");
         c2.setSeverity(Severity.HIGH);
         c2.setAffectedCount(40);
-        ComplaintResponse r2 = complaintService.registerComplaint(c2);
 
-        List<DuplicateCandidateResponse> dups = duplicateService.getDuplicatesForComplaint(r2.getId());
-        assertFalse(dups.isEmpty(), "Duplicate must be detected automatically without admin manual marking");
-        DuplicateCandidateResponse matchC1 = dups.stream()
-                .filter(d -> d.getTargetComplaintInternalId().equals(r1.getId()))
-                .findFirst()
-                .orElseThrow();
-        assertEquals(1.0, matchC1.getConfidenceScore(), 0.01, "Identical description at same location must have 1.0 confidence");
-        assertTrue(matchC1.isConfirmedDuplicate());
+        // Duplicate submission must be blocked and rejected immediately without being registered or assigned
+        DuplicateComplaintException ex = assertThrows(DuplicateComplaintException.class, () ->
+                complaintService.registerComplaint(c2),
+                "Duplicate complaint must be automatically rejected and deleted without registration");
+        assertEquals(r1.getComplaintId(), ex.getExistingComplaintId());
+        assertEquals(1.0, ex.getConfidenceScore(), 0.01);
     }
 
     @Test
-    @DisplayName("Test 8: Duplicate Detection - Similar Descriptions with Different Wording")
+    @DisplayName("Test 8: Duplicate Detection - Similar Descriptions with Different Wording are Automatically Discarded")
     @Transactional
     void testDuplicateSimilarDescriptionsWithDifferentWording() {
         ComplaintRegistrationRequest c1 = new ComplaintRegistrationRequest();
@@ -269,6 +260,7 @@ class ComplaintServiceIntegrationTest {
         c1.setSeverity(Severity.HIGH);
         c1.setAffectedCount(80);
         ComplaintResponse r1 = complaintService.registerComplaint(c1);
+        assertNotNull(r1);
 
         ComplaintRegistrationRequest c2 = new ComplaintRegistrationRequest();
         c2.setCitizenName("Citizen B");
@@ -277,11 +269,12 @@ class ComplaintServiceIntegrationTest {
         c2.setLocation("Gandhi Street");
         c2.setSeverity(Severity.HIGH);
         c2.setAffectedCount(60);
-        ComplaintResponse r2 = complaintService.registerComplaint(c2);
 
-        List<DuplicateCandidateResponse> dups = duplicateService.getDuplicatesForComplaint(r2.getId());
-        assertFalse(dups.isEmpty(), "Similar description with different wording at same location must be flagged as duplicate");
-        assertTrue(dups.get(0).getConfidenceScore() >= 0.70, "Confidence score should reflect high similarity");
+        // Similar description with different wording at same location must be rejected as duplicate
+        DuplicateComplaintException ex = assertThrows(DuplicateComplaintException.class, () ->
+                complaintService.registerComplaint(c2),
+                "Similar complaint on same issue must be rejected and not assigned or registered");
+        assertTrue(ex.getConfidenceScore() >= 0.70, "Confidence score should reflect high similarity");
     }
 
     @Test
@@ -340,7 +333,7 @@ class ComplaintServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("Test 11: Different Complaint IDs Describing the Same Issue")
+    @DisplayName("Test 11: Different Complaint Submissions Describing Same Issue are Rejected as Duplicate")
     @Transactional
     void testDifferentComplaintIdsDescribingSameIssue() {
         ComplaintRegistrationRequest c1 = new ComplaintRegistrationRequest();
@@ -351,6 +344,7 @@ class ComplaintServiceIntegrationTest {
         c1.setSeverity(Severity.HIGH);
         c1.setAffectedCount(100);
         ComplaintResponse r1 = complaintService.registerComplaint(c1);
+        assertNotNull(r1);
 
         ComplaintRegistrationRequest c2 = new ComplaintRegistrationRequest();
         c2.setCitizenName("Citizen Second");
@@ -359,16 +353,15 @@ class ComplaintServiceIntegrationTest {
         c2.setLocation("Market Area");
         c2.setSeverity(Severity.HIGH);
         c2.setAffectedCount(80);
-        ComplaintResponse r2 = complaintService.registerComplaint(c2);
 
-        assertNotEquals(r1.getComplaintId(), r2.getComplaintId(), "Complaint IDs must be distinct");
-        List<DuplicateCandidateResponse> dups = duplicateService.getDuplicatesForComplaint(r2.getId());
-        assertTrue(dups.stream().anyMatch(d -> d.getTargetComplaintInternalId().equals(r1.getId())),
-                "Complaints with different IDs describing the same defect must be linked as duplicates");
+        DuplicateComplaintException ex = assertThrows(DuplicateComplaintException.class, () ->
+                complaintService.registerComplaint(c2),
+                "Complaints describing the same defect must be rejected as duplicate");
+        assertEquals(r1.getComplaintId(), ex.getExistingComplaintId());
     }
 
     @Test
-    @DisplayName("Test 12: Multiple Possible Duplicate Candidates")
+    @DisplayName("Test 12: Subsequent Duplicate Submissions are Rejected")
     @Transactional
     void testMultiplePossibleDuplicateCandidates() {
         ComplaintRegistrationRequest c1 = new ComplaintRegistrationRequest();
@@ -379,6 +372,7 @@ class ComplaintServiceIntegrationTest {
         c1.setSeverity(Severity.MEDIUM);
         c1.setAffectedCount(30);
         ComplaintResponse r1 = complaintService.registerComplaint(c1);
+        assertNotNull(r1);
 
         ComplaintRegistrationRequest c2 = new ComplaintRegistrationRequest();
         c2.setCitizenName("Reporter 2");
@@ -387,20 +381,9 @@ class ComplaintServiceIntegrationTest {
         c2.setLocation("Nehru Colony");
         c2.setSeverity(Severity.MEDIUM);
         c2.setAffectedCount(25);
-        ComplaintResponse r2 = complaintService.registerComplaint(c2);
 
-        ComplaintRegistrationRequest c3 = new ComplaintRegistrationRequest();
-        c3.setCitizenName("Reporter 3");
-        c3.setCategory(Category.STREETLIGHT);
-        c3.setDescription("Dark streetlights failed on 3rd cross street");
-        c3.setLocation("Nehru Colony");
-        c3.setSeverity(Severity.MEDIUM);
-        c3.setAffectedCount(40);
-        ComplaintResponse r3 = complaintService.registerComplaint(c3);
-
-        List<DuplicateCandidateResponse> dupsForC3 = duplicateService.getDuplicatesForComplaint(r3.getId());
-        assertTrue(dupsForC3.size() >= 2, "Multiple duplicate candidates must be detected and linked");
-        assertTrue(dupsForC3.stream().anyMatch(d -> d.getTargetComplaintInternalId().equals(r1.getId())));
-        assertTrue(dupsForC3.stream().anyMatch(d -> d.getTargetComplaintInternalId().equals(r2.getId())));
+        assertThrows(DuplicateComplaintException.class, () ->
+                complaintService.registerComplaint(c2),
+                "Second submission on same streetlight failure must be rejected as duplicate");
     }
 }

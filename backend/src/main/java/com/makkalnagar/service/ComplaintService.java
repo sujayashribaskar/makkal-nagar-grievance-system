@@ -1,10 +1,12 @@
 package com.makkalnagar.service;
 
+import com.makkalnagar.domain.Department;
 import com.makkalnagar.domain.Grievance;
 import com.makkalnagar.dto.*;
 import com.makkalnagar.entity.*;
 import com.makkalnagar.enums.*;
 import com.makkalnagar.exception.CapacityExceededException;
+import com.makkalnagar.exception.DuplicateComplaintException;
 import com.makkalnagar.exception.InvalidOperationException;
 import com.makkalnagar.exception.ResourceNotFoundException;
 import com.makkalnagar.repository.*;
@@ -20,6 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@SuppressWarnings("null")
 public class ComplaintService {
 
     private static final Logger log = LoggerFactory.getLogger(ComplaintService.class);
@@ -72,7 +75,37 @@ public class ComplaintService {
                     "'. Allowed municipal zones are: " + String.join(", ", VALID_LOCATIONS));
         }
 
-        // 2. Generate deterministic arrival order using database-backed atomic sequence
+        // 2. Pre-check for duplicate complaints:
+        // If an active grievance for this defect already exists in the system (status != RESOLVED),
+        // reject and automatically discard it. It is NOT assigned, registered, or saved.
+        ComplaintEntity candidate = new ComplaintEntity();
+        candidate.setCategory(request.getCategory());
+        candidate.setLocation(requestedLocation);
+        candidate.setDescription(request.getDescription() != null ? request.getDescription().trim() : "");
+        candidate.setOpenIssueRef(request.getOpenIssueRef() != null && !request.getOpenIssueRef().isBlank() ?
+                request.getOpenIssueRef().trim() : null);
+
+        List<ComplaintEntity> activeComplaints = complaintRepository.findByStatusIn(
+                List.of(ComplaintStatus.REGISTERED, ComplaintStatus.ASSIGNED, ComplaintStatus.IN_PROGRESS));
+
+        Optional<DuplicateService.DuplicateMatch> duplicateMatch = duplicateService.findDuplicateMatch(candidate, activeComplaints);
+        if (duplicateMatch.isPresent()) {
+            DuplicateService.DuplicateMatch match = duplicateMatch.get();
+            ComplaintEntity existing = match.existingComplaint();
+            DuplicateDetectionEngine.DetectionResult result = match.result();
+            log.warn("Rejected duplicate complaint submission. Matches existing active complaint {} (confidence: {}%): {}",
+                    existing.getComplaintId(), Math.round(result.getConfidenceScore() * 100), result.getReason());
+
+            throw new DuplicateComplaintException(
+                    String.format("Duplicate complaint rejected: An active grievance for this issue is already registered under ID %s (%s, Location: %s). " +
+                                  "To prevent duplicate department dispatch, this submission was automatically discarded and not assigned or registered.",
+                            existing.getComplaintId(), existing.getStatus().getDisplayName(), existing.getLocation()),
+                    existing.getComplaintId(),
+                    result.getConfidenceScore()
+            );
+        }
+
+        // 3. Generate deterministic arrival order using database-backed atomic sequence
         ArrivalSequenceEntity seq = arrivalSequenceRepository.findByNameForUpdate("complaint_arrival")
                 .orElseGet(() -> arrivalSequenceRepository.save(new ArrivalSequenceEntity("complaint_arrival", 0L)));
         long arrivalOrder = seq.getCurrentVal() + 1;
@@ -260,6 +293,7 @@ public class ComplaintService {
 
         // When a complaint is resolved, capacity is freed in that department: auto-dispatch waiting queue!
         if (complaint.getDepartment() != null) {
+            departmentQueueService.removeActiveCase(complaint.getDepartment().getCode(), complaint.getComplaintId());
             dispatchNextWaitingComplaint(complaint.getDepartment());
         }
 
@@ -316,6 +350,7 @@ public class ComplaintService {
 
         // If old department had an active slot freed, dispatch its waiting queue!
         if (isActive && oldDept != null && !oldDept.getId().equals(targetDept.getId())) {
+            departmentQueueService.removeActiveCase(oldDept.getCode(), complaint.getComplaintId());
             dispatchNextWaitingComplaint(oldDept);
         }
 
@@ -331,7 +366,10 @@ public class ComplaintService {
     public synchronized void dispatchNextWaitingComplaint(DepartmentEntity department) {
         if (department == null) return;
 
-        while (true) {
+        int maxIterations = 50;
+        int iterations = 0;
+
+        while (iterations++ < maxIterations) {
             long activeCount = complaintRepository.countByDepartmentIdAndStatusIn(
                     department.getId(), List.of(ComplaintStatus.ASSIGNED, ComplaintStatus.IN_PROGRESS));
 
@@ -371,13 +409,17 @@ public class ComplaintService {
                     statusUpdateRepository.save(statusUpdate);
 
                     departmentQueueService.removeWaiting(waitingComplaint);
+                    Department deptDomain = departmentQueueService.getDepartment(department.getCode());
+                    if (deptDomain != null) {
+                        deptDomain.registerActiveCase(departmentQueueService.toDomain(waitingComplaint));
+                    }
                     log.info("Auto-dispatched waiting complaint {} to {} upon capacity release.",
                             waitingComplaint.getComplaintId(), department.getName());
                 } else {
                     departmentQueueService.removeWaiting(waitingComplaint);
                 }
             } else {
-                break;
+                departmentQueueService.removeWaitingById(department.getCode(), topGrievance.getComplaintId());
             }
         }
     }

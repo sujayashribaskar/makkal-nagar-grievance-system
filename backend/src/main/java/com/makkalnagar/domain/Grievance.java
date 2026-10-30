@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import java.util.Objects;
+
 /**
  * Abstract Base Class demonstrating core OOP concepts:
  * 1. Abstraction: Defines the contract for all municipal grievances;
@@ -99,6 +101,18 @@ public abstract class Grievance {
     public ComplaintStatus getStatus() { return status; }
     public String getAssignedDepartment() { return assignedDepartment; }
     public List<StatusUpdate> getHistory() { return Collections.unmodifiableList(history); }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || !(o instanceof Grievance other)) return false;
+        return Objects.equals(complaintId, other.complaintId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(complaintId);
+    }
 
     @Override
     public String toString() {

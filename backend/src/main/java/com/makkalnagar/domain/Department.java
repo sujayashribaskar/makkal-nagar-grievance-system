@@ -63,12 +63,25 @@ public class Department {
      * Removing and re-adding guarantees re-heapification in case priority attributes changed.
      */
     public synchronized void enqueueWaiting(Grievance g) {
-        waitingQueue.remove(g);
+        if (g == null) return;
+        waitingQueue.removeIf(item -> item.getComplaintId().equals(g.getComplaintId()));
         waitingQueue.add(g);
     }
 
     public synchronized boolean removeWaiting(Grievance g) {
-        return waitingQueue.remove(g);
+        if (g == null) return false;
+        return waitingQueue.removeIf(item -> item.getComplaintId().equals(g.getComplaintId()));
+    }
+
+    public synchronized boolean removeWaitingById(String complaintId) {
+        if (complaintId == null) return false;
+        return waitingQueue.removeIf(item -> item.getComplaintId().equals(complaintId));
+    }
+
+    public synchronized void removeActiveCase(String complaintId) {
+        if (complaintId != null) {
+            assignedCases.removeIf(item -> item.getComplaintId().equals(complaintId));
+        }
     }
 
     /**
@@ -87,7 +100,7 @@ public class Department {
     }
 
     public synchronized void registerActiveCase(Grievance g) {
-        if (!assignedCases.contains(g)) {
+        if (g != null && !assignedCases.contains(g)) {
             assignedCases.add(g);
             g.setAssignedDepartment(this.name);
         }

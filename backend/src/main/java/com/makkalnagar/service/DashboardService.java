@@ -60,8 +60,8 @@ public class DashboardService {
         ).getContent().stream()
                 .filter(c -> c.getStatus() == ComplaintStatus.REGISTERED)
                 .sorted(Comparator.comparingInt((ComplaintEntity c) -> c.getSeverity().getPriorityWeight()).reversed()
-                        .thenComparing(Comparator.comparingInt(ComplaintEntity::getAffectedCount).reversed())
-                        .thenComparingLong(ComplaintEntity::getArrivalOrder))
+                        .thenComparing(Comparator.comparingInt((ComplaintEntity c) -> c.getAffectedCount()).reversed())
+                        .thenComparingLong((ComplaintEntity c) -> c.getArrivalOrder()))
                 .limit(6)
                 .collect(Collectors.toList());
 

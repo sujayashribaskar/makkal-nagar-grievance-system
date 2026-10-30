@@ -99,9 +99,26 @@ public class DepartmentQueueService {
     }
 
     public synchronized void removeWaiting(ComplaintEntity entity) {
+        if (entity == null) return;
         Department dept = categoryToDepartmentMap.get(entity.getCategory());
         if (dept != null) {
-            dept.removeWaiting(toDomain(entity));
+            dept.removeWaitingById(entity.getComplaintId());
+        }
+    }
+
+    public synchronized void removeWaitingById(Category category, String complaintId) {
+        if (category == null || complaintId == null) return;
+        Department dept = categoryToDepartmentMap.get(category);
+        if (dept != null) {
+            dept.removeWaitingById(complaintId);
+        }
+    }
+
+    public synchronized void removeActiveCase(Category category, String complaintId) {
+        if (category == null || complaintId == null) return;
+        Department dept = categoryToDepartmentMap.get(category);
+        if (dept != null) {
+            dept.removeActiveCase(complaintId);
         }
     }
 

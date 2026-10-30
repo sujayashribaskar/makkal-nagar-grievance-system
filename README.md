@@ -2,7 +2,7 @@
 
 > **Tagline:** *"Your Voice. Our Responsibility."*  
 > **Course:** Second-Year Engineering Mini-Project  
-> **Stack:** Java 21 / 25 LTS &bull; Spring Boot 3.3 &bull; Spring Security &bull; Hibernate JPA &bull; MySQL 8 / MariaDB &bull; Flyway &bull; HTML5 / CSS3 / JavaScript &bull; Bootstrap 5 &bull; Chart.js  
+> **Stack:** Java 25 LTS &bull; Spring Boot 3.5 &bull; Spring Security &bull; Hibernate JPA &bull; MySQL 8 / MariaDB &bull; Flyway &bull; HTML5 / CSS3 / JavaScript &bull; Bootstrap 5 &bull; Chart.js
 
 ---
 
@@ -143,7 +143,7 @@ The database is built on **MySQL 8 / MariaDB** and version-controlled via Flyway
 ## 6. Setup & Execution Instructions
 
 ### Prerequisites
-- **Java**: JDK 21 or compatible LTS Java version (OpenJDK Adoptium 25 is installed on this machine).
+- **Java**: JDK 25 LTS (OpenJDK Adoptium 25).
 - **Maven**: Apache Maven 3.9+ (Installed at `C:\Users\Sujayashri baskar\tools\apache-maven-3.9.6\bin\mvn.cmd`).
 - **MySQL / MariaDB**: MySQL 8.x or MariaDB 10.4+ running on port `3306` (XAMPP MySQL is active).
 

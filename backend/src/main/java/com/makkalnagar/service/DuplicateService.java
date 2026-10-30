@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@SuppressWarnings("null")
 public class DuplicateService {
 
     private static final Logger log = LoggerFactory.getLogger(DuplicateService.class);
@@ -29,6 +30,26 @@ public class DuplicateService {
                             DuplicateDetectionEngine duplicateDetectionEngine) {
         this.duplicateLinkRepository = duplicateLinkRepository;
         this.duplicateDetectionEngine = duplicateDetectionEngine;
+    }
+
+    public record DuplicateMatch(ComplaintEntity existingComplaint, DuplicateDetectionEngine.DetectionResult result) {}
+
+    /**
+     * Checks if a candidate complaint matches any existing open complaints as a duplicate.
+     * Returns the duplicate match if confidence score meets the duplicate threshold (>= 0.60).
+     */
+    public Optional<DuplicateMatch> findDuplicateMatch(ComplaintEntity candidate, List<ComplaintEntity> candidates) {
+        for (ComplaintEntity existing : candidates) {
+            if (candidate.getId() != null && existing.getId() != null && existing.getId().equals(candidate.getId())) {
+                continue;
+            }
+
+            DuplicateDetectionEngine.DetectionResult result = duplicateDetectionEngine.evaluate(candidate, existing);
+            if (result.isDuplicate() && result.getConfidenceScore() >= DuplicateDetectionEngine.DUPLICATE_THRESHOLD) {
+                return Optional.of(new DuplicateMatch(existing, result));
+            }
+        }
+        return Optional.empty();
     }
 
     /**

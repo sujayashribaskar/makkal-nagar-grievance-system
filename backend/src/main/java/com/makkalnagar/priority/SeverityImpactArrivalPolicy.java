@@ -18,8 +18,8 @@ public class SeverityImpactArrivalPolicy extends GrievancePriorityPolicy {
     public Comparator<Grievance> comparator() {
         return Comparator
                 .comparingInt((Grievance g) -> g.getSeverity().getPriorityWeight()).reversed()
-                .thenComparing(Comparator.comparingInt(Grievance::getAffectedCount).reversed())
-                .thenComparingLong(Grievance::getArrivalOrder)
-                .thenComparing(Grievance::getComplaintId);
+                .thenComparing(Comparator.comparingInt((Grievance g) -> g.getAffectedCount()).reversed())
+                .thenComparingLong((Grievance g) -> g.getArrivalOrder())
+                .thenComparing((Grievance g) -> g.getComplaintId());
     }
 }

@@ -1,6 +1,5 @@
 package com.makkalnagar.domain;
 
-import com.makkalnagar.enums.Category;
 import com.makkalnagar.enums.ComplaintStatus;
 import com.makkalnagar.enums.Severity;
 import org.junit.jupiter.api.DisplayName;

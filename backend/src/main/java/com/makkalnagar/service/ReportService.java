@@ -118,7 +118,7 @@ public class ReportService {
         for (Map.Entry<Category, List<Long>> entry : hoursByCategory.entrySet()) {
             List<Long> durations = entry.getValue();
             double avgHours = durations.isEmpty() ? 0.0 :
-                    durations.stream().mapToLong(Long::longValue).average().orElse(0.0);
+                    durations.stream().mapToLong((Long v) -> v.longValue()).average().orElse(0.0);
 
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("category", entry.getKey().name());
@@ -163,7 +163,7 @@ public class ReportService {
     public String exportComplaintsCsv() {
         List<ComplaintEntity> list = complaintRepository.findAll();
         // Sort by arrival order ascending
-        list.sort(Comparator.comparingLong(ComplaintEntity::getArrivalOrder));
+        list.sort(Comparator.comparingLong((ComplaintEntity c) -> c.getArrivalOrder()));
 
         StringBuilder sb = new StringBuilder();
         sb.append("Complaint ID,Category,Location,Severity,Affected People,Arrival Order,Status,Department,Citizen Name,Created Date,Resolved Date,Resolution Notes\n");

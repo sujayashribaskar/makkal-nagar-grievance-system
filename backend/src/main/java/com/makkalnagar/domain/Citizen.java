@@ -1,5 +1,7 @@
 package com.makkalnagar.domain;
 
+import java.util.Objects;
+
 /**
  * Encapsulation: encapsulates citizen identity and contact location.
  */
@@ -20,6 +22,19 @@ public class Citizen {
     public String getName() { return name; }
     public String getPhone() { return phone; }
     public String getLocation() { return location; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Citizen citizen = (Citizen) o;
+        return Objects.equals(citizenId, citizen.citizenId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(citizenId);
+    }
 
     @Override
     public String toString() {

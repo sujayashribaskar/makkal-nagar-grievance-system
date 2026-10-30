@@ -26,6 +26,8 @@ public interface ComplaintRepository extends JpaRepository<ComplaintEntity, Long
 
     List<ComplaintEntity> findByDepartmentIdAndStatusIn(Long departmentId, Collection<ComplaintStatus> statuses);
 
+    List<ComplaintEntity> findByStatusIn(Collection<ComplaintStatus> statuses);
+
     long countByStatus(ComplaintStatus status);
 
     long countByDepartmentIdAndStatus(Long departmentId, ComplaintStatus status);
